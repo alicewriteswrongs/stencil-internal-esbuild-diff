@@ -1,4 +1,4 @@
-import type { BuildConditionals } from '@stencil/core/internal';
+import type { BuildConditionals } from "@stencil/core/internal";
 /**
  * A collection of default build flags for a Stencil project.
  *

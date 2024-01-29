@@ -1,4 +1,7 @@
-export type { StencilConfig as Config, PrerenderConfig } from '../stencil-public-compiler';
+export type {
+  StencilConfig as Config,
+  PrerenderConfig,
+} from "../stencil-public-compiler";
 export type {
   ChildNode,
   ComponentDidLoad,
@@ -21,7 +24,7 @@ export type {
   RafCallback,
   VNode,
   VNodeData,
-} from '../stencil-public-runtime';
+} from "../stencil-public-runtime";
 export {
   AttachInternals,
   Build,
@@ -49,4 +52,4 @@ export {
   State,
   Watch,
   writeTask,
-} from '../stencil-public-runtime';
+} from "../stencil-public-runtime";

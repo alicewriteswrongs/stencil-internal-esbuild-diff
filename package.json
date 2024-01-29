@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "prettier": "prettier --write internal/**/*.js"
+    "prettier": "prettier --no-cache --write internal"
   },
   "author": "",
   "license": "ISC",

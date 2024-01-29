@@ -1,1 +1,1 @@
-export * as result from "./result"
+export * as result from "./result";

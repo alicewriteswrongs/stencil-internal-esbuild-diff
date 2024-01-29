@@ -31,17 +31,17 @@ export type Result<OnSuccess, OnFailure> = Ok<OnSuccess> | Err<OnFailure>;
  * Type for the Ok state of a Result
  */
 type Ok<T> = {
-    isOk: true;
-    isErr: false;
-    value: T;
+  isOk: true;
+  isErr: false;
+  value: T;
 };
 /**
  * Type for the Err state of a Result
  */
 type Err<T> = {
-    isOk: false;
-    isErr: true;
-    value: T;
+  isOk: false;
+  isErr: true;
+  value: T;
 };
 /**
  * Create an `Ok` given a value. This doesn't do any checking that the value is
@@ -89,8 +89,14 @@ export declare const err: <T>(value: T) => Err<T>;
  * @returns a new `Result`, with the a new wrapped value (if `Ok`) or the
  * same (if `Err)
  */
-export declare function map<T1, T2, E>(result: Result<T1, E>, fn: (t: T1) => Promise<T2>): Promise<Result<T2, E>>;
-export declare function map<T1, T2, E>(result: Result<T1, E>, fn: (t: T1) => T2): Result<T2, E>;
+export declare function map<T1, T2, E>(
+  result: Result<T1, E>,
+  fn: (t: T1) => Promise<T2>,
+): Promise<Result<T2, E>>;
+export declare function map<T1, T2, E>(
+  result: Result<T1, E>,
+  fn: (t: T1) => T2,
+): Result<T2, E>;
 /**
  * Unwrap a {@link Result}, return the value inside if it is an `Ok` and
  * throw with the wrapped value if it is an `Err`.
