@@ -2435,7 +2435,7 @@ var forceUpdate = (ref) => {
     const isConnected = hostRef.$hostElement$.isConnected;
     if (
       isConnected &&
-      (hostRef.$flags$ & (2 /* hasRendered */ | 16) /* isQueuedForUpdate */) ===
+      (hostRef.$flags$ & (2 /* hasRendered */ | 16)) /* isQueuedForUpdate */ ===
         2 /* hasRendered */
     ) {
       scheduleUpdate(hostRef, false);
@@ -2562,7 +2562,7 @@ var setValue = (ref, propName, newVal, cmpMeta) => {
       }
       if (
         BUILD.updatable &&
-        (flags & (2 /* hasRendered */ | 16) /* isQueuedForUpdate */) ===
+        (flags & (2 /* hasRendered */ | 16)) /* isQueuedForUpdate */ ===
           2 /* hasRendered */
       ) {
         if (BUILD.cmpShouldUpdate && instance.componentShouldUpdate) {
@@ -2875,7 +2875,7 @@ var connectedCallback = (elm) => {
           BUILD.hydrateServerSide ||
           ((BUILD.slot || BUILD.shadowDom) && // TODO(STENCIL-854): Remove code related to legacy shadowDomShim field
             cmpMeta.$flags$ &
-              (4 /* hasSlotRelocation */ | 8) /* needsShadowDomShim */)
+              (4 /* hasSlotRelocation */ | 8)) /* needsShadowDomShim */
         ) {
           setContentReference(elm);
         }
@@ -14116,11 +14116,9 @@ var jquery_default =
                 i3 > 1 &&
                   toSelector(
                     // If the preceding token was a descendant combinator, insert an implicit any-element `*`
-                    tokens
-                      .slice(0, i3 - 1)
-                      .concat({
-                        value: tokens[i3 - 2].type === " " ? "*" : "",
-                      }),
+                    tokens.slice(0, i3 - 1).concat({
+                      value: tokens[i3 - 2].type === " " ? "*" : "",
+                    }),
                   ).replace(rtrimCSS, "$1"),
                 matcher,
                 i3 < j && matcherFromTokens(tokens.slice(i3, j)),

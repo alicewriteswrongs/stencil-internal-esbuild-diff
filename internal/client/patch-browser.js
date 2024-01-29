@@ -11335,11 +11335,9 @@ var jquery_default =
                 i2 > 1 &&
                   toSelector(
                     // If the preceding token was a descendant combinator, insert an implicit any-element `*`
-                    tokens
-                      .slice(0, i2 - 1)
-                      .concat({
-                        value: tokens[i2 - 2].type === " " ? "*" : "",
-                      }),
+                    tokens.slice(0, i2 - 1).concat({
+                      value: tokens[i2 - 2].type === " " ? "*" : "",
+                    }),
                   ).replace(rtrimCSS, "$1"),
                 matcher,
                 i2 < j && matcherFromTokens(tokens.slice(i2, j)),
