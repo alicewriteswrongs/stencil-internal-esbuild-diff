@@ -1,6 +1,6 @@
 {
   "name": "@stencil/core/internal/client",
-  "version": "4.12.0-dev.1706555987.315c939",
+  "version": "4.12.0-dev.1706556142.a505d86",
   "description": "Stencil internal client platform to be imported by the Stencil Compiler and internal runtime. Breaking changes can and will happen at any time.",
   "main": "./index.js",
   "private": true,
