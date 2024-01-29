@@ -1,6 +1,6 @@
 {
   "name": "@stencil/core/internal/app-data",
-  "version": "4.12.0-dev.1706551146.4fea5ef",
+  "version": "4.12.0-dev.1706551540.4fea5ef",
   "description": "Used for default app data and build conditionals within builds.",
   "main": "./index.cjs",
   "module": "./index.js",
