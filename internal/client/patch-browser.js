@@ -1,5 +1,5 @@
 /*
- Stencil Client Patch Browser v4.12.0-dev.1706555829.315c939 | MIT Licensed | https://stenciljs.com
+ Stencil Client Patch Browser v4.12.0-dev.1706555987.315c939 | MIT Licensed | https://stenciljs.com
  */
 
 // src/app-data/index.ts

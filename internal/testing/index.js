@@ -3053,7 +3053,7 @@ var disconnectedCallback = async (elm) => {
 };
 
 // src/runtime/dom-extras.ts
-var import_mock_doc = require("@stencil/core/mock-doc");
+var import_mock_doc = require("../../mock-doc/index.cjs");
 var patchPseudoShadowDom = (hostElementPrototype, descriptorPrototype) => {
   patchCloneNode(hostElementPrototype);
   patchSlotAppendChild(hostElementPrototype);
@@ -4175,7 +4175,7 @@ function flushLoadModule(bundleId) {
 }
 
 // src/testing/platform/testing-window.ts
-var import_mock_doc2 = require("@stencil/core/mock-doc");
+var import_mock_doc2 = require("../../mock-doc/index.cjs");
 var win = (0, import_mock_doc2.setupGlobal)(global);
 var doc = win.document;
 
