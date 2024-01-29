@@ -1,5 +1,26 @@
-// src/app-data/index.ts
-var BUILD = {
+/**
+ * A collection of default build flags for a Stencil project.
+ *
+ * This collection can be found throughout the Stencil codebase, often imported from the `@app-data` module like so:
+ * ```ts
+ * import { BUILD } from '@app-data';
+ * ```
+ * and is used to determine if a portion of the output of a Stencil _project_'s compilation step can be eliminated.
+ *
+ * e.g. When `BUILD.allRenderFn` evaluates to `false`, the compiler will eliminate conditional statements like:
+ * ```ts
+ * if (BUILD.allRenderFn) {
+ *   // some code that will be eliminated if BUILD.allRenderFn is false
+ * }
+ * ```
+ *
+ * `@app-data`, the module that `BUILD` is imported from, is an alias for the `@stencil/core/internal/app-data`, and is
+ * partially referenced by {@link STENCIL_APP_DATA_ID}. The `src/compiler/bundle/app-data-plugin.ts` references
+ * `STENCIL_APP_DATA_ID` uses it to replace these defaults with {@link BuildConditionals} that are derived from a
+ * Stencil project's contents (i.e. metadata from the components). This replacement happens at a Stencil project's
+ * compile time. Such code can be found at `src/compiler/app-core/app-data.ts`.
+ */
+const BUILD = {
   allRenderFn: false,
   cmpDidLoad: true,
   cmpDidUnload: false,
@@ -88,8 +109,7 @@ var BUILD = {
   // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   experimentalSlotFixes: false,
 };
-var Env = {};
-var NAMESPACE =
-  /* default */
-  "app";
+const Env = {};
+const NAMESPACE = /* default */ "app";
+
 export { BUILD, Env, NAMESPACE };
