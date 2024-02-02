@@ -5,7 +5,7 @@ import { globIterate } from 'glob'
 import { minify }  from 'terser'
 
 async function main() {
-  for await (const path of globIterate("internal/**/*.js")) {
+  for await (const path of globIterate("internal/**/*.{cjs,js}")) {
     const code = await fs.readFile(path);
 
     const result = await minify(String(code), {
