@@ -1,8 +1,3 @@
-/**
- * SystemJS 4.0.2
- * MANUAL PATCH: remove script.crossOrigin = "anonymous"
- * MANUAL PATCH: add conditionally apply, n.System=n.System||new u
- */
 !(function () {
   var e = "undefined" != typeof self,
     n = e ? self : global;

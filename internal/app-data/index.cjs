@@ -1,35 +1,5 @@
 "use strict";
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if ((from && typeof from === "object") || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, {
-          get: () => from[key],
-          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
-        });
-  }
-  return to;
-};
-var __toCommonJS = (mod) =>
-  __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// src/app-data/index.ts
-var app_data_exports = {};
-__export(app_data_exports, {
-  BUILD: () => BUILD,
-  Env: () => Env,
-  NAMESPACE: () => NAMESPACE,
-});
-module.exports = __toCommonJS(app_data_exports);
-var BUILD = {
+const BUILD = {
   allRenderFn: false,
   cmpDidLoad: true,
   cmpDidUnload: false,
@@ -89,18 +59,13 @@ var BUILD = {
   lazyLoad: false,
   profile: false,
   slotRelocation: true,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   appendChildSlotFix: false,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   cloneNodeFix: false,
   hydratedAttribute: false,
   hydratedClass: true,
   scriptDataOpts: false,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   scopedSlotTextContentFix: false,
-  // TODO(STENCIL-854): Remove code related to legacy shadowDomShim field
   shadowDomShim: false,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   slotChildNodesFix: false,
   invisiblePrehydration: true,
   propBoolean: true,
@@ -115,17 +80,10 @@ var BUILD = {
   asyncQueue: false,
   transformTagName: false,
   attachStyles: true,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   experimentalSlotFixes: false,
 };
-var Env = {};
-var NAMESPACE =
-  /* default */
-  "app";
-// Annotate the CommonJS export names for ESM import in node:
-0 &&
-  (module.exports = {
-    BUILD,
-    Env,
-    NAMESPACE,
-  });
+const Env = {};
+const NAMESPACE = "app";
+exports.BUILD = BUILD;
+exports.Env = Env;
+exports.NAMESPACE = NAMESPACE;

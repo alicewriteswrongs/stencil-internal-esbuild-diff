@@ -2,7 +2,6 @@ export function applyPolyfills() {
   var promises = [];
   if (typeof window !== "undefined") {
     var win = window;
-
     if (
       !win.customElements ||
       (win.Element &&
@@ -11,9 +10,8 @@ export function applyPolyfills() {
           !win.Element.prototype.remove ||
           !win.Element.prototype.getRootNode))
     ) {
-      promises.push(import(/* webpackChunkName: "polyfills-dom" */ "./dom.js"));
+      promises.push(import("./dom.js"));
     }
-
     var checkIfURLIsSupported = function () {
       try {
         var u = new URL("b", "http://a");
@@ -23,7 +21,6 @@ export function applyPolyfills() {
         return false;
       }
     };
-
     if (
       "function" !== typeof Object.assign ||
       !Object.entries ||
@@ -36,9 +33,7 @@ export function applyPolyfills() {
       !checkIfURLIsSupported() ||
       typeof WeakMap == "undefined"
     ) {
-      promises.push(
-        import(/* webpackChunkName: "polyfills-core-js" */ "./core-js.js"),
-      );
+      promises.push(import("./core-js.js"));
     }
   }
   return Promise.all(promises);

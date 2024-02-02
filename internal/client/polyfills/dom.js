@@ -1,12 +1,4 @@
 (function () {
-  /*
-    Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
-    This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-    The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-    The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-    Code distributed by Google as part of the polymer project is also
-    subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
-  */
   "use strict";
   var aa = new Set(
     "annotation-xml color-profile font-face font-face-src font-face-uri font-face-format font-face-name missing-glyph".split(
@@ -778,8 +770,6 @@
     });
   }
 }).call(self);
-
-// Polyfill document.baseURI
 "string" !== typeof document.baseURI &&
   Object.defineProperty(Document.prototype, "baseURI", {
     enumerable: !0,
@@ -789,8 +779,6 @@
       return a && a.href ? a.href : document.URL;
     },
   });
-
-// Polyfill CustomEvent
 "function" !== typeof window.CustomEvent &&
   ((window.CustomEvent = function (c, a) {
     a = a || { bubbles: !1, cancelable: !1, detail: void 0 };
@@ -799,8 +787,6 @@
     return b;
   }),
   (window.CustomEvent.prototype = window.Event.prototype));
-
-// Event.composedPath
 (function (b, c, d) {
   b.composedPath ||
     (b.composedPath = function () {
@@ -812,12 +798,6 @@
       return this.path;
     });
 })(Event.prototype, document, window);
-
-/*!
-Element.closest and Element.matches
-https://github.com/jonathantneal/closest
-Creative Commons Zero v1.0 Universal
-*/
 (function (a) {
   "function" !== typeof a.matches &&
     (a.matches =
@@ -838,10 +818,6 @@ Creative Commons Zero v1.0 Universal
       return null;
     });
 })(window.Element.prototype);
-
-/*!
-Element.getRootNode()
-*/
 (function (c) {
   function d(a) {
     a = b(a);
@@ -855,10 +831,6 @@ Element.getRootNode()
       return a && a.composed ? d(this) : b(this);
     });
 })(Element.prototype);
-
-/*!
-Element.isConnected()
-*/
 (function (a) {
   "isConnected" in a ||
     Object.defineProperty(a, "isConnected", {
@@ -870,10 +842,6 @@ Element.isConnected()
       },
     });
 })(Element.prototype);
-
-/*!
-Element.remove()
-*/
 (function (b) {
   b.forEach(function (a) {
     a.hasOwnProperty("remove") ||
@@ -887,10 +855,6 @@ Element.remove()
       });
   });
 })([Element.prototype, CharacterData.prototype, DocumentType.prototype]);
-
-/*!
-Element.classList
-*/
 !(function (e) {
   "classList" in e ||
     Object.defineProperty(e, "classList", {
@@ -949,10 +913,6 @@ Element.classList
       },
     });
 })(Element.prototype);
-
-/*!
-DOMTokenList
-*/
 (function (b) {
   try {
     document.body.classList.add();

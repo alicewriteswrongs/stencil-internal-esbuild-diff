@@ -1,5 +1,4 @@
-// src/app-data/index.ts
-var BUILD = {
+const BUILD = {
   allRenderFn: false,
   cmpDidLoad: true,
   cmpDidUnload: false,
@@ -59,18 +58,13 @@ var BUILD = {
   lazyLoad: false,
   profile: false,
   slotRelocation: true,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   appendChildSlotFix: false,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   cloneNodeFix: false,
   hydratedAttribute: false,
   hydratedClass: true,
   scriptDataOpts: false,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   scopedSlotTextContentFix: false,
-  // TODO(STENCIL-854): Remove code related to legacy shadowDomShim field
   shadowDomShim: false,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   slotChildNodesFix: false,
   invisiblePrehydration: true,
   propBoolean: true,
@@ -85,11 +79,8 @@ var BUILD = {
   asyncQueue: false,
   transformTagName: false,
   attachStyles: true,
-  // TODO(STENCIL-914): remove this option when `experimentalSlotFixes` is the default behavior
   experimentalSlotFixes: false,
 };
-var Env = {};
-var NAMESPACE =
-  /* default */
-  "app";
+const Env = {};
+const NAMESPACE = "app";
 export { BUILD, Env, NAMESPACE };

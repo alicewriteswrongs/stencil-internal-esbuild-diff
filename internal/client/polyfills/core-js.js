@@ -1,9 +1,3 @@
-/**
- * core-js 3.6.5
- * https://github.com/zloirock/core-js
- * License: http://rock.mit-license.org
- * © 2019 Denis Pushkarev (zloirock.ru)
- */
 !(function (t) {
   "use strict";
   !(function (t) {
@@ -6719,9 +6713,6 @@
     },
   ]);
 })();
-
-//!fetch 3.0.0, global "this" must be replaced with "window"
-// IIFE version
 !(function (t) {
   "use strict";
   var e = "URLSearchParams" in self,
