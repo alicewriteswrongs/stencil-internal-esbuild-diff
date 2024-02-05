@@ -1,4 +1,4 @@
-const BUILD = {
+var BUILD = {
   allRenderFn: false,
   cmpDidLoad: true,
   cmpDidUnload: false,
@@ -81,6 +81,6 @@ const BUILD = {
   attachStyles: true,
   experimentalSlotFixes: false,
 };
-const Env = {};
-const NAMESPACE = "app";
+var Env = {};
+var NAMESPACE = "app";
 export { BUILD, Env, NAMESPACE };
