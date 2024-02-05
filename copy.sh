@@ -36,4 +36,5 @@ cp -r $STENCIL_DIR/internal ./internal/
 npm run prettier
 npm run prettier
 
+git add internal
 git commit -am "and back to esbuild build"
