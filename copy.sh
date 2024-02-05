@@ -18,15 +18,23 @@ cd $STENCIL_DIR
 npm run clean && npm run build
 
 cd $REPO_DIR
-cp -r $STENCIL_DIR/internal ./internal/rollup/
-
-# Esbuild build
-cd $STENCIL_DIR
-npm run clean && run build.esbuild
-
-cd $REPO_DIR
-cp -r $STENCIL_DIR/internal ./internal/esbuild/
+cp -r $STENCIL_DIR/internal ./internal/
 
 ./strip-comments.mjs
 npm run prettier
 npm run prettier
+
+git commit -am "back to rollup build"
+
+# Esbuild build
+cd $STENCIL_DIR
+npm run clean && npm run build.esbuild
+
+cd $REPO_DIR
+cp -r $STENCIL_DIR/internal ./internal/
+
+./strip-comments.mjs
+npm run prettier
+npm run prettier
+
+git commit -am "and back to esbuild build"
