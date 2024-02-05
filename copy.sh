@@ -15,7 +15,7 @@ npm run clean && npm run build
 
 cd $REPO_DIR
 rm -rf internal/*
-cp -r $STENCIL_DIR/internal ./internal/
+cp -r $STENCIL_DIR/internal .
 
 ./strip-comments.mjs
 npm run prettier
@@ -30,7 +30,7 @@ npm run clean && npm run build.esbuild
 
 cd $REPO_DIR
 rm -rf internal/*
-cp -r $STENCIL_DIR/internal ./internal/
+cp -r $STENCIL_DIR/internal .
 
 ./strip-comments.mjs
 npm run prettier
