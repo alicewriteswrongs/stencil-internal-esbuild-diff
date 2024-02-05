@@ -6,23 +6,20 @@ set -eux
 # should look like `export STENCIL_DIR=/path/to/repo`
 source .env
 
-# clear out old stuff
-rm -rf internal/rollup/*
-rm -rf internal/esbuild/*
-
 # grab cwd for later
 REPO_DIR=$(pwd)
 
-# # Rollup build
-# cd $STENCIL_DIR
-# npm run clean && npm run build
+# Rollup build
+cd $STENCIL_DIR
+npm run clean && npm run build
 
-# cd $REPO_DIR
-# cp -r $STENCIL_DIR/internal ./internal/
+cd $REPO_DIR
+rm -rf internal/*
+cp -r $STENCIL_DIR/internal ./internal/
 
-# ./strip-comments.mjs
-# npm run prettier
-# npm run prettier
+./strip-comments.mjs
+npm run prettier
+npm run prettier
 
 git add internal
 git commit -am "back to rollup build"
@@ -32,6 +29,7 @@ cd $STENCIL_DIR
 npm run clean && npm run build.esbuild
 
 cd $REPO_DIR
+rm -rf internal/*
 cp -r $STENCIL_DIR/internal ./internal/
 
 ./strip-comments.mjs
