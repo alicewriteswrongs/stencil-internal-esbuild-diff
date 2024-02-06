@@ -1,10 +1,12 @@
-var __defProp = Object.defineProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-import { cloneWindow, MockWindow } from "@stencil/core/mock-doc";
-var templateWindows = new Map();
+import {
+  MockWindow,
+  cloneWindow,
+  patchWindow,
+  constrainTimeouts,
+  serializeNodeToHtml,
+} from "@stencil/core/mock-doc";
+import { hydrateFactory } from "@stencil/core/hydrate-factory";
+const templateWindows = new Map();
 function createWindowFromHtml(templateHtml, uniqueId) {
   let templateWindow = templateWindows.get(uniqueId);
   if (templateWindow == null) {
@@ -14,17 +16,12 @@ function createWindowFromHtml(templateHtml, uniqueId) {
   const win = cloneWindow(templateWindow);
   return win;
 }
-import { hydrateFactory } from "@stencil/core/hydrate-factory";
-import {
-  MockWindow as MockWindow3,
-  serializeNodeToHtml,
-} from "@stencil/core/mock-doc";
-var isString = (v) => typeof v === "string";
-var isPromise = (v) =>
+const isString = (v) => typeof v === "string";
+const isPromise = (v) =>
   !!v &&
   (typeof v === "object" || typeof v === "function") &&
   typeof v.then === "function";
-var catchError = (diagnostics, err2, msg) => {
+const catchError = (diagnostics, err, msg) => {
   const diagnostic = {
     level: "error",
     type: "build",
@@ -34,16 +31,16 @@ var catchError = (diagnostics, err2, msg) => {
   };
   if (isString(msg)) {
     diagnostic.messageText = msg.length ? msg : "UNKNOWN ERROR";
-  } else if (err2 != null) {
-    if (err2.stack != null) {
-      diagnostic.messageText = err2.stack.toString();
+  } else if (err != null) {
+    if (err.stack != null) {
+      diagnostic.messageText = err.stack.toString();
     } else {
-      if (err2.message != null) {
-        diagnostic.messageText = err2.message.length
-          ? err2.message
+      if (err.message != null) {
+        diagnostic.messageText = err.message.length
+          ? err.message
           : "UNKNOWN ERROR";
       } else {
-        diagnostic.messageText = err2.toString();
+        diagnostic.messageText = err.toString();
       }
     }
   }
@@ -52,54 +49,15 @@ var catchError = (diagnostics, err2, msg) => {
   }
   return diagnostic;
 };
-var hasError = (diagnostics) => {
+const hasError = (diagnostics) => {
   if (diagnostics == null || diagnostics.length === 0) {
     return false;
   }
   return diagnostics.some((d) => d.level === "error" && d.type !== "runtime");
 };
-var shouldIgnoreError = (msg) => msg === TASK_CANCELED_MSG;
-var TASK_CANCELED_MSG = `task canceled`;
-var result_exports = {};
-__export(result_exports, {
-  err: () => err,
-  map: () => map,
-  ok: () => ok,
-  unwrap: () => unwrap,
-  unwrapErr: () => unwrapErr,
-});
-var ok = (value) => ({ isOk: true, isErr: false, value: value });
-var err = (value) => ({ isOk: false, isErr: true, value: value });
-function map(result, fn) {
-  if (result.isOk) {
-    const val = fn(result.value);
-    if (val instanceof Promise) {
-      return val.then((newVal) => ok(newVal));
-    } else {
-      return ok(val);
-    }
-  }
-  if (result.isErr) {
-    const value = result.value;
-    return err(value);
-  }
-  throw "should never get here";
-}
-var unwrap = (result) => {
-  if (result.isOk) {
-    return result.value;
-  } else {
-    throw result.value;
-  }
-};
-var unwrapErr = (result) => {
-  if (result.isErr) {
-    return result.value;
-  } else {
-    throw result.value;
-  }
-};
-var updateCanonicalLink = (doc, href) => {
+const shouldIgnoreError = (msg) => msg === TASK_CANCELED_MSG;
+const TASK_CANCELED_MSG = `task canceled`;
+const updateCanonicalLink = (doc, href) => {
   let canonicalLinkElm = doc.head.querySelector('link[rel="canonical"]');
   if (typeof href === "string") {
     if (canonicalLinkElm == null) {
@@ -117,7 +75,7 @@ var updateCanonicalLink = (doc, href) => {
     }
   }
 };
-var relocateMetaCharset = (doc) => {
+const relocateMetaCharset = (doc) => {
   const head = doc.head;
   let charsetElm = head.querySelector("meta[charset]");
   if (charsetElm == null) {
@@ -128,7 +86,7 @@ var relocateMetaCharset = (doc) => {
   }
   head.insertBefore(charsetElm, head.firstChild);
 };
-var parseCss = (css, filePath) => {
+const parseCss = (css, filePath) => {
   let lineno = 1;
   let column = 1;
   const diagnostics = [];
@@ -203,23 +161,23 @@ var parseCss = (css, filePath) => {
   };
   const rules = () => {
     let node;
-    const rules2 = [];
+    const rules = [];
     whitespace();
-    comments(rules2);
+    comments(rules);
     while (css.length && css.charAt(0) !== "}" && (node = atrule() || rule())) {
-      rules2.push(node);
-      comments(rules2);
+      rules.push(node);
+      comments(rules);
     }
-    return rules2;
+    return rules;
   };
   const whitespace = () => match(/^\s*/);
-  const comments = (rules2) => {
+  const comments = (rules) => {
     let c;
-    rules2 = rules2 || [];
+    rules = rules || [];
     while ((c = comment())) {
-      rules2.push(c);
+      rules.push(c);
     }
-    return rules2;
+    return rules;
   };
   const comment = () => {
     const pos = position();
@@ -234,20 +192,20 @@ var parseCss = (css, filePath) => {
     if ("" === css.charAt(i - 1)) {
       return error("End of comment missing");
     }
-    const comment2 = css.slice(2, i - 2);
+    const comment = css.slice(2, i - 2);
     column += 2;
-    updatePosition(comment2);
+    updatePosition(comment);
     css = css.slice(i);
     column += 2;
-    return pos({ type: 1, comment: comment2 });
+    return pos({ type: 1, comment: comment });
   };
   const selector = () => {
     const m = match(/^([^{]+)/);
     if (!m) return null;
     return trim(m[0])
       .replace(/\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*\/+/g, "")
-      .replace(/"(?:\\"|[^"])*"|'(?:\\'|[^'])*'/g, function (m2) {
-        return m2.replace(/,/g, "‌");
+      .replace(/"(?:\\"|[^"])*"|'(?:\\'|[^'])*'/g, function (m) {
+        return m.replace(/,/g, "‌");
       })
       .split(/\s*(?![^(]*\)),\s*/)
       .map(function (s) {
@@ -432,8 +390,8 @@ var parseCss = (css, filePath) => {
   ParsePosition.prototype.content = css;
   return { diagnostics: diagnostics, ...addParent(stylesheet()) };
 };
-var trim = (str) => (str ? str.trim() : "");
-var addParent = (obj, parent) => {
+const trim = (str) => (str ? str.trim() : "");
+const addParent = (obj, parent) => {
   const isNode = obj && typeof obj.type === "string";
   const childParent = isNode ? obj : parent;
   for (const k in obj) {
@@ -456,8 +414,8 @@ var addParent = (obj, parent) => {
   }
   return obj;
 };
-var commentre = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g;
-var getCssSelectors = (sel) => {
+const commentre = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g;
+const getCssSelectors = (sel) => {
   SELECTORS.all.length =
     SELECTORS.tags.length =
     SELECTORS.classNames.length =
@@ -495,8 +453,8 @@ var getCssSelectors = (sel) => {
   });
   return SELECTORS;
 };
-var SELECTORS = { all: [], tags: [], classNames: [], ids: [], attrs: [] };
-var serializeCss = (stylesheet, serializeOpts) => {
+const SELECTORS = { all: [], tags: [], classNames: [], ids: [], attrs: [] };
+const serializeCss = (stylesheet, serializeOpts) => {
   const usedSelectors = serializeOpts.usedSelectors || null;
   const opts = {
     usedSelectors: usedSelectors || null,
@@ -516,7 +474,7 @@ var serializeCss = (stylesheet, serializeOpts) => {
   }
   return out.join("");
 };
-var serializeCssVisitNode = (opts, node, index, len) => {
+const serializeCssVisitNode = (opts, node, index, len) => {
   var _a;
   const nodeType = node.type;
   if (nodeType === 4) {
@@ -526,7 +484,9 @@ var serializeCssVisitNode = (opts, node, index, len) => {
     return serializeCssRule(opts, node);
   }
   if (nodeType === 1) {
-    if (((_a = node.comment) == null ? void 0 : _a[0]) === "!") {
+    if (
+      ((_a = node.comment) === null || _a === void 0 ? void 0 : _a[0]) === "!"
+    ) {
       return `/*${node.comment}*/`;
     } else {
       return "";
@@ -570,12 +530,14 @@ var serializeCssVisitNode = (opts, node, index, len) => {
   }
   return "";
 };
-var serializeCssRule = (opts, node) => {
+const serializeCssRule = (opts, node) => {
   var _a, _b;
   const decls = node.declarations;
   const usedSelectors = opts.usedSelectors;
   const selectors =
-    (_b = (_a = node.selectors) == null ? void 0 : _a.slice()) != null
+    (_b =
+      (_a = node.selectors) === null || _a === void 0 ? void 0 : _a.slice()) !==
+      null && _b !== void 0
       ? _b
       : [];
   if (decls == null || decls.length === 0) {
@@ -650,7 +612,7 @@ var serializeCssRule = (opts, node) => {
   }
   return `${cleanedSelectors}{${serializeCssMapVisit(opts, decls)}}`;
 };
-var serializeCssDeclaration = (node, index, len) => {
+const serializeCssDeclaration = (node, index, len) => {
   if (node.value === "") {
     return "";
   }
@@ -659,14 +621,14 @@ var serializeCssDeclaration = (node, index, len) => {
   }
   return node.property + ":" + node.value + ";";
 };
-var serializeCssMedia = (opts, node) => {
+const serializeCssMedia = (opts, node) => {
   const mediaCss = serializeCssMapVisit(opts, node.rules);
   if (mediaCss === "") {
     return "";
   }
   return "@media " + removeMediaWhitespace(node.media) + "{" + mediaCss + "}";
 };
-var serializeCssKeyframes = (opts, node) => {
+const serializeCssKeyframes = (opts, node) => {
   const keyframesCss = serializeCssMapVisit(opts, node.keyframes);
   if (keyframesCss === "") {
     return "";
@@ -681,10 +643,12 @@ var serializeCssKeyframes = (opts, node) => {
     "}"
   );
 };
-var serializeCssKeyframe = (opts, node) => {
+const serializeCssKeyframe = (opts, node) => {
   var _a, _b;
   return (
-    ((_b = (_a = node.values) == null ? void 0 : _a.join(",")) != null
+    ((_b =
+      (_a = node.values) === null || _a === void 0 ? void 0 : _a.join(",")) !==
+      null && _b !== void 0
       ? _b
       : "") +
     "{" +
@@ -692,31 +656,34 @@ var serializeCssKeyframe = (opts, node) => {
     "}"
   );
 };
-var serializeCssFontFace = (opts, node) => {
+const serializeCssFontFace = (opts, node) => {
   const fontCss = serializeCssMapVisit(opts, node.declarations);
   if (fontCss === "") {
     return "";
   }
   return "@font-face{" + fontCss + "}";
 };
-var serializeCssSupports = (opts, node) => {
+const serializeCssSupports = (opts, node) => {
   const supportsCss = serializeCssMapVisit(opts, node.rules);
   if (supportsCss === "") {
     return "";
   }
   return "@supports " + node.supports + "{" + supportsCss + "}";
 };
-var serializeCssPage = (opts, node) => {
+const serializeCssPage = (opts, node) => {
   var _a, _b;
   const sel =
-    (_b = (_a = node.selectors) == null ? void 0 : _a.join(", ")) != null
+    (_b =
+      (_a = node.selectors) === null || _a === void 0
+        ? void 0
+        : _a.join(", ")) !== null && _b !== void 0
       ? _b
       : "";
   return (
     "@page " + sel + "{" + serializeCssMapVisit(opts, node.declarations) + "}"
   );
 };
-var serializeCssDocument = (opts, node) => {
+const serializeCssDocument = (opts, node) => {
   const documentCss = serializeCssMapVisit(opts, node.rules);
   const doc = "@" + (node.vendor || "") + "document " + node.document;
   if (documentCss === "") {
@@ -724,7 +691,7 @@ var serializeCssDocument = (opts, node) => {
   }
   return doc + "{" + documentCss + "}";
 };
-var serializeCssMapVisit = (opts, nodes) => {
+const serializeCssMapVisit = (opts, nodes) => {
   let rtn = "";
   if (nodes) {
     for (let i = 0, len = nodes.length; i < len; i++) {
@@ -733,7 +700,7 @@ var serializeCssMapVisit = (opts, nodes) => {
   }
   return rtn;
 };
-var removeSelectorWhitespace = (selector) => {
+const removeSelectorWhitespace = (selector) => {
   let rtn = "";
   let char = "";
   let inAttr = false;
@@ -759,11 +726,15 @@ var removeSelectorWhitespace = (selector) => {
   }
   return rtn;
 };
-var removeMediaWhitespace = (media) => {
+const removeMediaWhitespace = (media) => {
   var _a;
   let rtn = "";
   let char = "";
-  media = (_a = media == null ? void 0 : media.trim()) != null ? _a : "";
+  media =
+    (_a = media === null || media === void 0 ? void 0 : media.trim()) !==
+      null && _a !== void 0
+      ? _a
+      : "";
   for (let i = 0, l = media.length; i < l; i++) {
     char = media[i];
     if (CSS_WS_REG.test(char)) {
@@ -777,10 +748,10 @@ var removeMediaWhitespace = (media) => {
   }
   return rtn;
 };
-var CSS_WS_REG = /\s/;
-var CSS_NEXT_CHAR_REG = /[>\(\)\~\,\+\s]/;
-var CSS_PREV_CHAR_REG = /[>\(\~\,\+]/;
-var getUsedSelectors = (elm) => {
+const CSS_WS_REG = /\s/;
+const CSS_NEXT_CHAR_REG = /[>\(\)\~\,\+\s]/;
+const CSS_PREV_CHAR_REG = /[>\(\~\,\+]/;
+const getUsedSelectors = (elm) => {
   const usedSelectors = {
     attrs: new Set(),
     classNames: new Set(),
@@ -790,7 +761,7 @@ var getUsedSelectors = (elm) => {
   collectUsedSelectors(usedSelectors, elm);
   return usedSelectors;
 };
-var collectUsedSelectors = (usedSelectors, elm) => {
+const collectUsedSelectors = (usedSelectors, elm) => {
   if (elm != null && elm.nodeType === 1) {
     const children = elm.children;
     const tagName = elm.nodeName.toLowerCase();
@@ -802,8 +773,8 @@ var collectUsedSelectors = (usedSelectors, elm) => {
       usedSelectors.attrs.add(attrName);
       if (attrName === "class") {
         const classList = elm.classList;
-        for (let i2 = 0, l2 = classList.length; i2 < l2; i2++) {
-          usedSelectors.classNames.add(classList.item(i2));
+        for (let i = 0, l = classList.length; i < l; i++) {
+          usedSelectors.classNames.add(classList.item(i));
         }
       } else if (attrName === "id") {
         usedSelectors.ids.add(attr.value);
@@ -816,7 +787,7 @@ var collectUsedSelectors = (usedSelectors, elm) => {
     }
   }
 };
-var removeUnusedStyles = (doc, diagnostics) => {
+const removeUnusedStyles = (doc, diagnostics) => {
   try {
     const styleElms = doc.head.querySelectorAll(`style[data-styles]`);
     const styleLen = styleElms.length;
@@ -830,7 +801,7 @@ var removeUnusedStyles = (doc, diagnostics) => {
     catchError(diagnostics, e);
   }
 };
-var removeUnusedStyleText = (usedSelectors, diagnostics, styleElm) => {
+const removeUnusedStyleText = (usedSelectors, diagnostics, styleElm) => {
   try {
     const parseResults = parseCss(styleElm.innerHTML);
     diagnostics.push(...parseResults.diagnostics);
@@ -952,8 +923,7 @@ function collectAttributes(node) {
   }
   return parsedElm;
 }
-var SKIP_ATTRS = new Set(["s-id", "c-id"]);
-import { MockWindow as MockWindow2, patchWindow } from "@stencil/core/mock-doc";
+const SKIP_ATTRS = new Set(["s-id", "c-id"]);
 function patchDomImplementation(doc, opts) {
   let win;
   if (doc.defaultView != null) {
@@ -963,7 +933,7 @@ function patchDomImplementation(doc, opts) {
   } else {
     opts.destroyWindow = true;
     opts.destroyDocument = false;
-    win = new MockWindow2(false);
+    win = new MockWindow(false);
   }
   if (win.document !== doc) {
     win.document = doc;
@@ -1095,7 +1065,7 @@ function generateHydrateResults(opts) {
   }
   return results;
 }
-var createHydrateBuildId = () => {
+const createHydrateBuildId = () => {
   let chars = "abcdefghijklmnopqrstuvwxyz";
   let buildId = "";
   while (buildId.length < 8) {
@@ -1113,8 +1083,8 @@ function renderBuildDiagnostic(results, level, header, msg) {
     type: "build",
     header: header,
     messageText: msg,
-    relFilePath: void 0,
-    absFilePath: void 0,
+    relFilePath: undefined,
+    absFilePath: undefined,
     lines: [],
   };
   if (results.pathname) {
@@ -1130,34 +1100,33 @@ function renderBuildDiagnostic(results, level, header, msg) {
 function renderBuildError(results, msg) {
   return renderBuildDiagnostic(results, "error", "Hydrate Error", msg);
 }
-function renderCatchError(results, err2) {
+function renderCatchError(results, err) {
   const diagnostic = renderBuildError(results, null);
-  if (err2 != null) {
-    if (err2.stack != null) {
-      diagnostic.messageText = err2.stack.toString();
+  if (err != null) {
+    if (err.stack != null) {
+      diagnostic.messageText = err.stack.toString();
     } else {
-      if (err2.message != null) {
-        diagnostic.messageText = err2.message.toString();
+      if (err.message != null) {
+        diagnostic.messageText = err.message.toString();
       } else {
-        diagnostic.messageText = err2.toString();
+        diagnostic.messageText = err.toString();
       }
     }
   }
   return diagnostic;
 }
-import { constrainTimeouts } from "@stencil/core/mock-doc";
 function runtimeLogging(win, opts, results) {
   try {
     const pathname = win.location.pathname;
     win.console.error = (...msgs) => {
       const errMsg = msgs
-        .reduce((errMsg2, m) => {
+        .reduce((errMsg, m) => {
           if (m) {
             if (m.stack != null) {
-              return errMsg2 + " " + String(m.stack);
+              return errMsg + " " + String(m.stack);
             } else {
               if (m.message != null) {
-                return errMsg2 + " " + String(m.message);
+                return errMsg + " " + String(m.message);
               }
             }
           }
@@ -1256,7 +1225,7 @@ function renderToString(html, options) {
       try {
         opts.destroyWindow = true;
         opts.destroyDocument = true;
-        win = new MockWindow3(html);
+        win = new MockWindow(html);
         render(win, opts, results, resolve);
       } catch (e) {
         if (win && win.close) {
@@ -1300,7 +1269,7 @@ function hydrateDocument(doc, options) {
       try {
         opts.destroyWindow = true;
         opts.destroyDocument = true;
-        win = new MockWindow3(doc);
+        win = new MockWindow(doc);
         render(win, opts, results, resolve);
       } catch (e) {
         if (win && win.close) {
