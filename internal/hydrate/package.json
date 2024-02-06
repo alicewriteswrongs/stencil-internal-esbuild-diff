@@ -1,6 +1,6 @@
 {
   "name": "@stencil/core/internal/hydrate",
-  "version": "4.12.1-dev.1707254832.3d3c3c7",
+  "version": "4.12.1-dev.1707254899.7bb9ba7",
   "description": "Stencil internal hydrate platform to be imported by the Stencil Compiler. Breaking changes can and will happen at any time.",
   "main": "./index.js",
   "private": true
