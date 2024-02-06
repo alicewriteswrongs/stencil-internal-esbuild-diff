@@ -1,6 +1,6 @@
 import { BUILD, NAMESPACE } from "@stencil/core/internal/app-data";
-import { consoleDevInfo, doc, promiseResolve, H } from "@stencil/core";
-const patchBrowser = () => {
+import { consoleDevInfo, doc, H, promiseResolve } from "@stencil/core";
+var patchBrowser = () => {
   if (BUILD.isDev && !BUILD.isTesting) {
     consoleDevInfo("Running in development mode.");
   }
@@ -21,7 +21,7 @@ const patchBrowser = () => {
   }
   return promiseResolve(opts);
 };
-const patchCloneNodeFix = (HTMLElementPrototype) => {
+var patchCloneNodeFix = (HTMLElementPrototype) => {
   const nativeCloneNodeFn = HTMLElementPrototype.cloneNode;
   HTMLElementPrototype.cloneNode = function (deep) {
     if (this.nodeName === "TEMPLATE") {
