@@ -26,7 +26,7 @@ git commit -am "back to rollup build"
 
 # Esbuild build
 cd "$STENCIL_DIR"
-npm run clean && npm run build.esbuild
+npm run build.esbuild
 
 cd "$REPO_DIR"
 rm -rf internal/*
