@@ -1,3 +1,4 @@
+"use strict";
 const escapeRegExpSpecialCharacters = (text) =>
   text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const safeSelector = (selector) => {
@@ -388,4 +389,4 @@ const scopeCss = (cssText, scopeId, commentOriginalSelector) => {
   });
   return cssText;
 };
-export { scopeCss };
+exports.scopeCss = scopeCss;
