@@ -25,12 +25,12 @@ git add internal
 git commit -am "back to rollup build"
 
 # Esbuild build
-cd $STENCIL_DIR
+cd "$STENCIL_DIR"
 npm run clean && npm run build.esbuild
 
-cd $REPO_DIR
+cd "$REPO_DIR"
 rm -rf internal/*
-cp -r $STENCIL_DIR/internal .
+cp -r "$STENCIL_DIR"/internal .
 
 ./strip-comments.mjs
 npm run prettier
