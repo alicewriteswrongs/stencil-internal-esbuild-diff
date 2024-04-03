@@ -1,6 +1,6 @@
 {
   "name": "@stencil/core/mock-doc",
-  "version": "4.14.0-dev.1712179966.c1a9f20",
+  "version": "4.14.0-dev.1712180038.c1a9f20",
   "description": "Mock window, document and DOM outside of a browser environment.",
   "main": "./index.cjs",
   "module": "./index.js",
