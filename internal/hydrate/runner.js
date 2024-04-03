@@ -1,1067 +1,152 @@
-var __defProp = Object.defineProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-import { cloneWindow, MockWindow } from "@stencil/core/mock-doc";
-var templateWindows = new Map();
-function createWindowFromHtml(templateHtml, uniqueId) {
-  let templateWindow = templateWindows.get(uniqueId);
-  if (templateWindow == null) {
-    templateWindow = new MockWindow(templateHtml);
-    templateWindows.set(uniqueId, templateWindow);
-  }
-  const win = cloneWindow(templateWindow);
-  return win;
+function createWindowFromHtml(e, t) {
+  let r = templateWindows.get(t);
+  return (
+    null == r && ((r = new MockWindow(e)), templateWindows.set(t, r)),
+    cloneWindow(r)
+  );
 }
-import { hydrateFactory } from "@stencil/core/hydrate-factory";
-import {
-  MockWindow as MockWindow3,
-  serializeNodeToHtml,
-} from "@stencil/core/mock-doc";
-var isString = (v) => typeof v === "string";
-var isPromise = (v) =>
-  !!v &&
-  (typeof v === "object" || typeof v === "function") &&
-  typeof v.then === "function";
-var catchError = (diagnostics, err2, msg) => {
-  const diagnostic = {
-    level: "error",
-    type: "build",
-    header: "Build Error",
-    messageText: "build error",
-    lines: [],
-  };
-  if (isString(msg)) {
-    diagnostic.messageText = msg.length ? msg : "UNKNOWN ERROR";
-  } else if (err2 != null) {
-    if (err2.stack != null) {
-      diagnostic.messageText = err2.stack.toString();
-    } else {
-      if (err2.message != null) {
-        diagnostic.messageText = err2.message.length
-          ? err2.message
-          : "UNKNOWN ERROR";
-      } else {
-        diagnostic.messageText = err2.toString();
-      }
-    }
-  }
-  if (diagnostics != null && !shouldIgnoreError(diagnostic.messageText)) {
-    diagnostics.push(diagnostic);
-  }
-  return diagnostic;
-};
-var hasError = (diagnostics) => {
-  if (diagnostics == null || diagnostics.length === 0) {
-    return false;
-  }
-  return diagnostics.some((d) => d.level === "error" && d.type !== "runtime");
-};
-var shouldIgnoreError = (msg) => msg === TASK_CANCELED_MSG;
-var TASK_CANCELED_MSG = `task canceled`;
-var result_exports = {};
-__export(result_exports, {
-  err: () => err,
-  map: () => map,
-  ok: () => ok,
-  unwrap: () => unwrap,
-  unwrapErr: () => unwrapErr,
-});
-var ok = (value) => ({ isOk: true, isErr: false, value: value });
-var err = (value) => ({ isOk: false, isErr: true, value: value });
-function map(result, fn) {
-  if (result.isOk) {
-    const val = fn(result.value);
-    if (val instanceof Promise) {
-      return val.then((newVal) => ok(newVal));
-    } else {
-      return ok(val);
-    }
-  }
-  if (result.isErr) {
-    const value = result.value;
-    return err(value);
-  }
-  throw "should never get here";
-}
-var unwrap = (result) => {
-  if (result.isOk) {
-    return result.value;
-  } else {
-    throw result.value;
-  }
-};
-var unwrapErr = (result) => {
-  if (result.isErr) {
-    return result.value;
-  } else {
-    throw result.value;
-  }
-};
-var updateCanonicalLink = (doc, href) => {
-  let canonicalLinkElm = doc.head.querySelector('link[rel="canonical"]');
-  if (typeof href === "string") {
-    if (canonicalLinkElm == null) {
-      canonicalLinkElm = doc.createElement("link");
-      canonicalLinkElm.setAttribute("rel", "canonical");
-      doc.head.appendChild(canonicalLinkElm);
-    }
-    canonicalLinkElm.setAttribute("href", href);
-  } else {
-    if (canonicalLinkElm != null) {
-      const existingHref = canonicalLinkElm.getAttribute("href");
-      if (!existingHref) {
-        canonicalLinkElm.parentNode.removeChild(canonicalLinkElm);
-      }
-    }
-  }
-};
-var relocateMetaCharset = (doc) => {
-  const head = doc.head;
-  let charsetElm = head.querySelector("meta[charset]");
-  if (charsetElm == null) {
-    charsetElm = doc.createElement("meta");
-    charsetElm.setAttribute("charset", "utf-8");
-  } else {
-    charsetElm.remove();
-  }
-  head.insertBefore(charsetElm, head.firstChild);
-};
-var parseCss = (css, filePath) => {
-  let lineno = 1;
-  let column = 1;
-  const diagnostics = [];
-  const updatePosition = (str) => {
-    const lines = str.match(/\n/g);
-    if (lines) lineno += lines.length;
-    const i = str.lastIndexOf("\n");
-    column = ~i ? str.length - i : column + str.length;
-  };
-  const position = () => {
-    const start = { line: lineno, column: column };
-    return (node) => {
-      node.position = new ParsePosition(start);
-      whitespace();
-      return node;
-    };
-  };
-  const error = (msg) => {
-    const srcLines = css.split("\n");
-    const d = {
-      level: "error",
-      type: "css",
-      language: "css",
-      header: "CSS Parse",
-      messageText: msg,
-      absFilePath: filePath,
-      lines: [
-        {
-          lineIndex: lineno - 1,
-          lineNumber: lineno,
-          errorCharStart: column,
-          text: css[lineno - 1],
-        },
-      ],
-    };
-    if (lineno > 1) {
-      const previousLine = {
-        lineIndex: lineno - 1,
-        lineNumber: lineno - 1,
-        text: css[lineno - 2],
-        errorCharStart: -1,
-        errorLength: -1,
-      };
-      d.lines.unshift(previousLine);
-    }
-    if (lineno + 2 < srcLines.length) {
-      const nextLine = {
-        lineIndex: lineno,
-        lineNumber: lineno + 1,
-        text: srcLines[lineno],
-        errorCharStart: -1,
-        errorLength: -1,
-      };
-      d.lines.push(nextLine);
-    }
-    diagnostics.push(d);
-    return null;
-  };
-  const stylesheet = () => {
-    const rulesList = rules();
-    return { type: 14, stylesheet: { source: filePath, rules: rulesList } };
-  };
-  const open = () => match(/^{\s*/);
-  const close = () => match(/^}/);
-  const match = (re) => {
-    const m = re.exec(css);
-    if (!m) return;
-    const str = m[0];
-    updatePosition(str);
-    css = css.slice(str.length);
-    return m;
-  };
-  const rules = () => {
-    let node;
-    const rules2 = [];
-    whitespace();
-    comments(rules2);
-    while (css.length && css.charAt(0) !== "}" && (node = atrule() || rule())) {
-      rules2.push(node);
-      comments(rules2);
-    }
-    return rules2;
-  };
-  const whitespace = () => match(/^\s*/);
-  const comments = (rules2) => {
-    let c;
-    rules2 = rules2 || [];
-    while ((c = comment())) {
-      rules2.push(c);
-    }
-    return rules2;
-  };
-  const comment = () => {
-    const pos = position();
-    if ("/" !== css.charAt(0) || "*" !== css.charAt(1)) return null;
-    let i = 2;
-    while (
-      "" !== css.charAt(i) &&
-      ("*" !== css.charAt(i) || "/" !== css.charAt(i + 1))
-    )
-      ++i;
-    i += 2;
-    if ("" === css.charAt(i - 1)) {
-      return error("End of comment missing");
-    }
-    const comment2 = css.slice(2, i - 2);
-    column += 2;
-    updatePosition(comment2);
-    css = css.slice(i);
-    column += 2;
-    return pos({ type: 1, comment: comment2 });
-  };
-  const selector = () => {
-    const m = match(/^([^{]+)/);
-    if (!m) return null;
-    return trim(m[0])
-      .replace(/\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*\/+/g, "")
-      .replace(/"(?:\\"|[^"])*"|'(?:\\'|[^'])*'/g, function (m2) {
-        return m2.replace(/,/g, "‌");
-      })
-      .split(/\s*(?![^(]*\)),\s*/)
-      .map(function (s) {
-        return s.replace(/\u200C/g, ",");
-      });
-  };
-  const declaration = () => {
-    const pos = position();
-    let prop = match(/^(\*?[-#\/\*\\\w]+(\[[0-9a-z_-]+\])?)\s*/);
-    if (!prop) return null;
-    prop = trim(prop[0]);
-    if (!match(/^:\s*/)) return error(`property missing ':'`);
-    const val = match(/^((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^\)]*?\)|[^};])+)/);
-    const ret = pos({
-      type: 4,
-      property: prop.replace(commentre, ""),
-      value: val ? trim(val[0]).replace(commentre, "") : "",
-    });
-    match(/^[;\s]*/);
-    return ret;
-  };
-  const declarations = () => {
-    const decls = [];
-    if (!open()) return error(`missing '{'`);
-    comments(decls);
-    let decl;
-    while ((decl = declaration())) {
-      decls.push(decl);
-      comments(decls);
-    }
-    if (!close()) return error(`missing '}'`);
-    return decls;
-  };
-  const keyframe = () => {
-    let m;
-    const values = [];
-    const pos = position();
-    while ((m = match(/^((\d+\.\d+|\.\d+|\d+)%?|[a-z]+)\s*/))) {
-      values.push(m[1]);
-      match(/^,\s*/);
-    }
-    if (!values.length) return null;
-    return pos({ type: 9, values: values, declarations: declarations() });
-  };
-  const atkeyframes = () => {
-    const pos = position();
-    let m = match(/^@([-\w]+)?keyframes\s*/);
-    if (!m) return null;
-    const vendor = m[1];
-    m = match(/^([-\w]+)\s*/);
-    if (!m) return error(`@keyframes missing name`);
-    const name = m[1];
-    if (!open()) return error(`@keyframes missing '{'`);
-    let frame;
-    let frames = comments();
-    while ((frame = keyframe())) {
-      frames.push(frame);
-      frames = frames.concat(comments());
-    }
-    if (!close()) return error(`@keyframes missing '}'`);
-    return pos({ type: 8, name: name, vendor: vendor, keyframes: frames });
-  };
-  const atsupports = () => {
-    const pos = position();
-    const m = match(/^@supports *([^{]+)/);
-    if (!m) return null;
-    const supports = trim(m[1]);
-    if (!open()) return error(`@supports missing '{'`);
-    const style = comments().concat(rules());
-    if (!close()) return error(`@supports missing '}'`);
-    return pos({ type: 15, supports: supports, rules: style });
-  };
-  const athost = () => {
-    const pos = position();
-    const m = match(/^@host\s*/);
-    if (!m) return null;
-    if (!open()) return error(`@host missing '{'`);
-    const style = comments().concat(rules());
-    if (!close()) return error(`@host missing '}'`);
-    return pos({ type: 6, rules: style });
-  };
-  const atmedia = () => {
-    const pos = position();
-    const m = match(/^@media *([^{]+)/);
-    if (!m) return null;
-    const media = trim(m[1]);
-    if (!open()) return error(`@media missing '{'`);
-    const style = comments().concat(rules());
-    if (!close()) return error(`@media missing '}'`);
-    return pos({ type: 10, media: media, rules: style });
-  };
-  const atcustommedia = () => {
-    const pos = position();
-    const m = match(/^@custom-media\s+(--[^\s]+)\s*([^{;]+);/);
-    if (!m) return null;
-    return pos({ type: 2, name: trim(m[1]), media: trim(m[2]) });
-  };
-  const atpage = () => {
-    const pos = position();
-    const m = match(/^@page */);
-    if (!m) return null;
-    const sel = selector() || [];
-    if (!open()) return error(`@page missing '{'`);
-    let decls = comments();
-    let decl;
-    while ((decl = declaration())) {
-      decls.push(decl);
-      decls = decls.concat(comments());
-    }
-    if (!close()) return error(`@page missing '}'`);
-    return pos({ type: 12, selectors: sel, declarations: decls });
-  };
-  const atdocument = () => {
-    const pos = position();
-    const m = match(/^@([-\w]+)?document *([^{]+)/);
-    if (!m) return null;
-    const vendor = trim(m[1]);
-    const doc = trim(m[2]);
-    if (!open()) return error(`@document missing '{'`);
-    const style = comments().concat(rules());
-    if (!close()) return error(`@document missing '}'`);
-    return pos({ type: 3, document: doc, vendor: vendor, rules: style });
-  };
-  const atfontface = () => {
-    const pos = position();
-    const m = match(/^@font-face\s*/);
-    if (!m) return null;
-    if (!open()) return error(`@font-face missing '{'`);
-    let decls = comments();
-    let decl;
-    while ((decl = declaration())) {
-      decls.push(decl);
-      decls = decls.concat(comments());
-    }
-    if (!close()) return error(`@font-face missing '}'`);
-    return pos({ type: 5, declarations: decls });
-  };
-  const compileAtrule = (nodeName, nodeType) => {
-    const re = new RegExp("^@" + nodeName + "\\s*([^;]+);");
-    return () => {
-      const pos = position();
-      const m = match(re);
-      if (!m) return null;
-      const node = { type: nodeType };
-      node[nodeName] = m[1].trim();
-      return pos(node);
-    };
-  };
-  const atimport = compileAtrule("import", 7);
-  const atcharset = compileAtrule("charset", 0);
-  const atnamespace = compileAtrule("namespace", 11);
-  const atrule = () => {
-    if (css[0] !== "@") return null;
-    return (
-      atkeyframes() ||
-      atmedia() ||
-      atcustommedia() ||
-      atsupports() ||
-      atimport() ||
-      atcharset() ||
-      atnamespace() ||
-      atdocument() ||
-      atpage() ||
-      athost() ||
-      atfontface()
-    );
-  };
-  const rule = () => {
-    const pos = position();
-    const sel = selector();
-    if (!sel) return error("selector missing");
-    comments();
-    return pos({ type: 13, selectors: sel, declarations: declarations() });
-  };
-  class ParsePosition {
-    constructor(start) {
-      this.start = start;
-      this.end = { line: lineno, column: column };
-      this.source = filePath;
-    }
-  }
-  ParsePosition.prototype.content = css;
-  return { diagnostics: diagnostics, ...addParent(stylesheet()) };
-};
-var trim = (str) => (str ? str.trim() : "");
-var addParent = (obj, parent) => {
-  const isNode = obj && typeof obj.type === "string";
-  const childParent = isNode ? obj : parent;
-  for (const k in obj) {
-    const value = obj[k];
-    if (Array.isArray(value)) {
-      value.forEach(function (v) {
-        addParent(v, childParent);
-      });
-    } else if (value && typeof value === "object") {
-      addParent(value, childParent);
-    }
-  }
-  if (isNode) {
-    Object.defineProperty(obj, "parent", {
-      configurable: true,
-      writable: true,
-      enumerable: false,
-      value: parent || null,
-    });
-  }
-  return obj;
-};
-var commentre = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g;
-var getCssSelectors = (sel) => {
-  SELECTORS.all.length =
-    SELECTORS.tags.length =
-    SELECTORS.classNames.length =
-    SELECTORS.ids.length =
-    SELECTORS.attrs.length =
-      0;
-  sel = sel
-    .replace(/\./g, " .")
-    .replace(/\#/g, " #")
-    .replace(/\[/g, " [")
-    .replace(/\>/g, " > ")
-    .replace(/\+/g, " + ")
-    .replace(/\~/g, " ~ ")
-    .replace(/\*/g, " * ")
-    .replace(/\:not\((.*?)\)/g, " ");
-  const items = sel.split(" ");
-  for (let i = 0, l = items.length; i < l; i++) {
-    items[i] = items[i].split(":")[0];
-    if (items[i].length === 0) continue;
-    if (items[i].charAt(0) === ".") {
-      SELECTORS.classNames.push(items[i].slice(1));
-    } else if (items[i].charAt(0) === "#") {
-      SELECTORS.ids.push(items[i].slice(1));
-    } else if (items[i].charAt(0) === "[") {
-      items[i] = items[i].slice(1).split("=")[0].split("]")[0].trim();
-      SELECTORS.attrs.push(items[i].toLowerCase());
-    } else if (/[a-z]/g.test(items[i].charAt(0))) {
-      SELECTORS.tags.push(items[i].toLowerCase());
-    }
-  }
-  SELECTORS.classNames = SELECTORS.classNames.sort((a, b) => {
-    if (a.length < b.length) return -1;
-    if (a.length > b.length) return 1;
-    return 0;
-  });
-  return SELECTORS;
-};
-var SELECTORS = { all: [], tags: [], classNames: [], ids: [], attrs: [] };
-var serializeCss = (stylesheet, serializeOpts) => {
-  const usedSelectors = serializeOpts.usedSelectors || null;
-  const opts = {
-    usedSelectors: usedSelectors || null,
-    hasUsedAttrs: !!usedSelectors && usedSelectors.attrs.size > 0,
-    hasUsedClassNames: !!usedSelectors && usedSelectors.classNames.size > 0,
-    hasUsedIds: !!usedSelectors && usedSelectors.ids.size > 0,
-    hasUsedTags: !!usedSelectors && usedSelectors.tags.size > 0,
-  };
-  const rules = stylesheet.rules;
-  if (!rules) {
-    return "";
-  }
-  const rulesLen = rules.length;
-  const out = [];
-  for (let i = 0; i < rulesLen; i++) {
-    out.push(serializeCssVisitNode(opts, rules[i], i, rulesLen));
-  }
-  return out.join("");
-};
-var serializeCssVisitNode = (opts, node, index, len) => {
-  var _a;
-  const nodeType = node.type;
-  if (nodeType === 4) {
-    return serializeCssDeclaration(node, index, len);
-  }
-  if (nodeType === 13) {
-    return serializeCssRule(opts, node);
-  }
-  if (nodeType === 1) {
-    if (((_a = node.comment) == null ? void 0 : _a[0]) === "!") {
-      return `/*${node.comment}*/`;
-    } else {
-      return "";
-    }
-  }
-  if (nodeType === 10) {
-    return serializeCssMedia(opts, node);
-  }
-  if (nodeType === 8) {
-    return serializeCssKeyframes(opts, node);
-  }
-  if (nodeType === 9) {
-    return serializeCssKeyframe(opts, node);
-  }
-  if (nodeType === 5) {
-    return serializeCssFontFace(opts, node);
-  }
-  if (nodeType === 15) {
-    return serializeCssSupports(opts, node);
-  }
-  if (nodeType === 7) {
-    return "@import " + node.import + ";";
-  }
-  if (nodeType === 0) {
-    return "@charset " + node.charset + ";";
-  }
-  if (nodeType === 12) {
-    return serializeCssPage(opts, node);
-  }
-  if (nodeType === 6) {
-    return "@host{" + serializeCssMapVisit(opts, node.rules) + "}";
-  }
-  if (nodeType === 2) {
-    return "@custom-media " + node.name + " " + node.media + ";";
-  }
-  if (nodeType === 3) {
-    return serializeCssDocument(opts, node);
-  }
-  if (nodeType === 11) {
-    return "@namespace " + node.namespace + ";";
-  }
-  return "";
-};
-var serializeCssRule = (opts, node) => {
-  var _a, _b;
-  const decls = node.declarations;
-  const usedSelectors = opts.usedSelectors;
-  const selectors =
-    (_b = (_a = node.selectors) == null ? void 0 : _a.slice()) != null
-      ? _b
-      : [];
-  if (decls == null || decls.length === 0) {
-    return "";
-  }
-  if (usedSelectors) {
-    let i;
-    let j;
-    let include = true;
-    for (i = selectors.length - 1; i >= 0; i--) {
-      const sel = getCssSelectors(selectors[i]);
-      include = true;
-      let jlen = sel.classNames.length;
-      if (jlen > 0 && opts.hasUsedClassNames) {
-        for (j = 0; j < jlen; j++) {
-          if (!usedSelectors.classNames.has(sel.classNames[j])) {
-            include = false;
-            break;
-          }
-        }
-      }
-      if (include && opts.hasUsedTags) {
-        jlen = sel.tags.length;
-        if (jlen > 0) {
-          for (j = 0; j < jlen; j++) {
-            if (!usedSelectors.tags.has(sel.tags[j])) {
-              include = false;
-              break;
-            }
-          }
-        }
-      }
-      if (include && opts.hasUsedAttrs) {
-        jlen = sel.attrs.length;
-        if (jlen > 0) {
-          for (j = 0; j < jlen; j++) {
-            if (!usedSelectors.attrs.has(sel.attrs[j])) {
-              include = false;
-              break;
-            }
-          }
-        }
-      }
-      if (include && opts.hasUsedIds) {
-        jlen = sel.ids.length;
-        if (jlen > 0) {
-          for (j = 0; j < jlen; j++) {
-            if (!usedSelectors.ids.has(sel.ids[j])) {
-              include = false;
-              break;
-            }
-          }
-        }
-      }
-      if (!include) {
-        selectors.splice(i, 1);
-      }
-    }
-  }
-  if (selectors.length === 0) {
-    return "";
-  }
-  const cleanedSelectors = [];
-  let cleanedSelector = "";
-  if (node.selectors) {
-    for (const selector of node.selectors) {
-      cleanedSelector = removeSelectorWhitespace(selector);
-      if (!cleanedSelectors.includes(cleanedSelector)) {
-        cleanedSelectors.push(cleanedSelector);
-      }
-    }
-  }
-  return `${cleanedSelectors}{${serializeCssMapVisit(opts, decls)}}`;
-};
-var serializeCssDeclaration = (node, index, len) => {
-  if (node.value === "") {
-    return "";
-  }
-  if (len - 1 === index) {
-    return node.property + ":" + node.value;
-  }
-  return node.property + ":" + node.value + ";";
-};
-var serializeCssMedia = (opts, node) => {
-  const mediaCss = serializeCssMapVisit(opts, node.rules);
-  if (mediaCss === "") {
-    return "";
-  }
-  return "@media " + removeMediaWhitespace(node.media) + "{" + mediaCss + "}";
-};
-var serializeCssKeyframes = (opts, node) => {
-  const keyframesCss = serializeCssMapVisit(opts, node.keyframes);
-  if (keyframesCss === "") {
-    return "";
-  }
-  return (
-    "@" +
-    (node.vendor || "") +
-    "keyframes " +
-    node.name +
-    "{" +
-    keyframesCss +
-    "}"
-  );
-};
-var serializeCssKeyframe = (opts, node) => {
-  var _a, _b;
-  return (
-    ((_b = (_a = node.values) == null ? void 0 : _a.join(",")) != null
-      ? _b
-      : "") +
-    "{" +
-    serializeCssMapVisit(opts, node.declarations) +
-    "}"
-  );
-};
-var serializeCssFontFace = (opts, node) => {
-  const fontCss = serializeCssMapVisit(opts, node.declarations);
-  if (fontCss === "") {
-    return "";
-  }
-  return "@font-face{" + fontCss + "}";
-};
-var serializeCssSupports = (opts, node) => {
-  const supportsCss = serializeCssMapVisit(opts, node.rules);
-  if (supportsCss === "") {
-    return "";
-  }
-  return "@supports " + node.supports + "{" + supportsCss + "}";
-};
-var serializeCssPage = (opts, node) => {
-  var _a, _b;
-  const sel =
-    (_b = (_a = node.selectors) == null ? void 0 : _a.join(", ")) != null
-      ? _b
-      : "";
-  return (
-    "@page " + sel + "{" + serializeCssMapVisit(opts, node.declarations) + "}"
-  );
-};
-var serializeCssDocument = (opts, node) => {
-  const documentCss = serializeCssMapVisit(opts, node.rules);
-  const doc = "@" + (node.vendor || "") + "document " + node.document;
-  if (documentCss === "") {
-    return "";
-  }
-  return doc + "{" + documentCss + "}";
-};
-var serializeCssMapVisit = (opts, nodes) => {
-  let rtn = "";
-  if (nodes) {
-    for (let i = 0, len = nodes.length; i < len; i++) {
-      rtn += serializeCssVisitNode(opts, nodes[i], i, len);
-    }
-  }
-  return rtn;
-};
-var removeSelectorWhitespace = (selector) => {
-  let rtn = "";
-  let char = "";
-  let inAttr = false;
-  selector = selector.trim();
-  for (let i = 0, l = selector.length; i < l; i++) {
-    char = selector[i];
-    if (char === "[" && rtn[rtn.length - 1] !== "\\") {
-      inAttr = true;
-    } else if (char === "]" && rtn[rtn.length - 1] !== "\\") {
-      inAttr = false;
-    }
-    if (!inAttr && CSS_WS_REG.test(char)) {
-      if (CSS_NEXT_CHAR_REG.test(selector[i + 1])) {
-        continue;
-      }
-      if (CSS_PREV_CHAR_REG.test(rtn[rtn.length - 1])) {
-        continue;
-      }
-      rtn += " ";
-    } else {
-      rtn += char;
-    }
-  }
-  return rtn;
-};
-var removeMediaWhitespace = (media) => {
-  var _a;
-  let rtn = "";
-  let char = "";
-  media = (_a = media == null ? void 0 : media.trim()) != null ? _a : "";
-  for (let i = 0, l = media.length; i < l; i++) {
-    char = media[i];
-    if (CSS_WS_REG.test(char)) {
-      if (CSS_WS_REG.test(rtn[rtn.length - 1])) {
-        continue;
-      }
-      rtn += " ";
-    } else {
-      rtn += char;
-    }
-  }
-  return rtn;
-};
-var CSS_WS_REG = /\s/;
-var CSS_NEXT_CHAR_REG = /[>\(\)\~\,\+\s]/;
-var CSS_PREV_CHAR_REG = /[>\(\~\,\+]/;
-var getUsedSelectors = (elm) => {
-  const usedSelectors = {
-    attrs: new Set(),
-    classNames: new Set(),
-    ids: new Set(),
-    tags: new Set(),
-  };
-  collectUsedSelectors(usedSelectors, elm);
-  return usedSelectors;
-};
-var collectUsedSelectors = (usedSelectors, elm) => {
-  if (elm != null && elm.nodeType === 1) {
-    const children = elm.children;
-    const tagName = elm.nodeName.toLowerCase();
-    usedSelectors.tags.add(tagName);
-    const attributes = elm.attributes;
-    for (let i = 0, l = attributes.length; i < l; i++) {
-      const attr = attributes.item(i);
-      const attrName = attr.name.toLowerCase();
-      usedSelectors.attrs.add(attrName);
-      if (attrName === "class") {
-        const classList = elm.classList;
-        for (let i2 = 0, l2 = classList.length; i2 < l2; i2++) {
-          usedSelectors.classNames.add(classList.item(i2));
-        }
-      } else if (attrName === "id") {
-        usedSelectors.ids.add(attr.value);
-      }
-    }
-    if (children) {
-      for (let i = 0, l = children.length; i < l; i++) {
-        collectUsedSelectors(usedSelectors, children[i]);
-      }
-    }
-  }
-};
-var removeUnusedStyles = (doc, diagnostics) => {
-  try {
-    const styleElms = doc.head.querySelectorAll(`style[data-styles]`);
-    const styleLen = styleElms.length;
-    if (styleLen > 0) {
-      const usedSelectors = getUsedSelectors(doc.documentElement);
-      for (let i = 0; i < styleLen; i++) {
-        removeUnusedStyleText(usedSelectors, diagnostics, styleElms[i]);
-      }
-    }
-  } catch (e) {
-    catchError(diagnostics, e);
-  }
-};
-var removeUnusedStyleText = (usedSelectors, diagnostics, styleElm) => {
-  try {
-    const parseResults = parseCss(styleElm.innerHTML);
-    diagnostics.push(...parseResults.diagnostics);
-    if (hasError(diagnostics)) {
-      return;
-    }
-    try {
-      styleElm.innerHTML = serializeCss(parseResults.stylesheet, {
-        usedSelectors: usedSelectors,
-      });
-    } catch (e) {
-      diagnostics.push({
-        level: "warn",
-        type: "css",
-        header: "CSS Stringify",
-        messageText: e,
-        lines: [],
-      });
-    }
-  } catch (e) {
-    diagnostics.push({
-      level: "warn",
-      type: "css",
-      header: "CSS Parse",
-      messageText: e,
-      lines: [],
-    });
-  }
-};
-function inspectElement(results, elm, depth) {
-  const children = elm.children;
-  for (let i = 0, ii = children.length; i < ii; i++) {
-    const childElm = children[i];
-    const tagName = childElm.nodeName.toLowerCase();
-    if (tagName.includes("-")) {
-      const cmp = results.components.find((c) => c.tag === tagName);
-      if (cmp != null) {
-        cmp.count++;
-        if (depth > cmp.depth) {
-          cmp.depth = depth;
-        }
-      }
-    } else {
-      switch (tagName) {
+function inspectElement(e, t, r) {
+  const s = t.children;
+  for (let t = 0, n = s.length; t < n; t++) {
+    const n = s[t],
+      o = n.nodeName.toLowerCase();
+    if (o.includes("-")) {
+      const t = e.components.find((e) => e.tag === o);
+      null != t && (t.count++, r > t.depth && (t.depth = r));
+    } else
+      switch (o) {
         case "a":
-          const anchor = collectAttributes(childElm);
-          anchor.href = childElm.href;
-          if (typeof anchor.href === "string") {
-            if (!results.anchors.some((a) => a.href === anchor.href)) {
-              results.anchors.push(anchor);
-            }
-          }
+          const t = collectAttributes(n);
+          (t.href = n.href),
+            "string" == typeof t.href &&
+              (e.anchors.some((e) => e.href === t.href) || e.anchors.push(t));
           break;
         case "img":
-          const img = collectAttributes(childElm);
-          img.src = childElm.src;
-          if (typeof img.src === "string") {
-            if (!results.imgs.some((a) => a.src === img.src)) {
-              results.imgs.push(img);
-            }
-          }
+          const r = collectAttributes(n);
+          (r.src = n.src),
+            "string" == typeof r.src &&
+              (e.imgs.some((e) => e.src === r.src) || e.imgs.push(r));
           break;
         case "link":
-          const link = collectAttributes(childElm);
-          link.href = childElm.href;
-          if (
-            typeof link.rel === "string" &&
-            link.rel.toLowerCase() === "stylesheet"
-          ) {
-            if (typeof link.href === "string") {
-              if (!results.styles.some((s) => s.link === link.href)) {
-                delete link.rel;
-                delete link.type;
-                results.styles.push(link);
-              }
-            }
-          }
+          const s = collectAttributes(n);
+          (s.href = n.href),
+            "string" == typeof s.rel &&
+              "stylesheet" === s.rel.toLowerCase() &&
+              "string" == typeof s.href &&
+              (e.styles.some((e) => e.link === s.href) ||
+                (delete s.rel, delete s.type, e.styles.push(s)));
           break;
         case "script":
-          const script = collectAttributes(childElm);
-          if (childElm.hasAttribute("src")) {
-            script.src = childElm.src;
-            if (typeof script.src === "string") {
-              if (!results.scripts.some((s) => s.src === script.src)) {
-                results.scripts.push(script);
-              }
-            }
-          } else {
-            const staticDataKey = childElm.getAttribute("data-stencil-static");
-            if (staticDataKey) {
-              results.staticData.push({
-                id: staticDataKey,
-                type: childElm.getAttribute("type"),
-                content: childElm.textContent,
+          const o = collectAttributes(n);
+          if (n.hasAttribute("src"))
+            (o.src = n.src),
+              "string" == typeof o.src &&
+                (e.scripts.some((e) => e.src === o.src) || e.scripts.push(o));
+          else {
+            const t = n.getAttribute("data-stencil-static");
+            t &&
+              e.staticData.push({
+                id: t,
+                type: n.getAttribute("type"),
+                content: n.textContent,
               });
-            }
           }
-          break;
       }
-    }
-    depth++;
-    inspectElement(results, childElm, depth);
+    inspectElement(e, n, ++r);
   }
 }
-function collectAttributes(node) {
-  const parsedElm = {};
-  const attrs = node.attributes;
-  for (let i = 0, ii = attrs.length; i < ii; i++) {
-    const attr = attrs.item(i);
-    const attrName = attr.nodeName.toLowerCase();
-    if (SKIP_ATTRS.has(attrName)) {
-      continue;
-    }
-    const attrValue = attr.nodeValue;
-    if (attrName === "class" && attrValue === "") {
-      continue;
-    }
-    parsedElm[attrName] = attrValue;
+function collectAttributes(e) {
+  const t = {},
+    r = e.attributes;
+  for (let e = 0, s = r.length; e < s; e++) {
+    const s = r.item(e),
+      n = s.nodeName.toLowerCase();
+    if (SKIP_ATTRS.has(n)) continue;
+    const o = s.nodeValue;
+    ("class" === n && "" === o) || (t[n] = o);
   }
-  return parsedElm;
+  return t;
 }
-var SKIP_ATTRS = new Set(["s-id", "c-id"]);
-import { MockWindow as MockWindow2, patchWindow } from "@stencil/core/mock-doc";
-function patchDomImplementation(doc, opts) {
-  let win;
-  if (doc.defaultView != null) {
-    opts.destroyWindow = true;
-    patchWindow(doc.defaultView);
-    win = doc.defaultView;
-  } else {
-    opts.destroyWindow = true;
-    opts.destroyDocument = false;
-    win = new MockWindow2(false);
-  }
-  if (win.document !== doc) {
-    win.document = doc;
-  }
-  if (doc.defaultView !== win) {
-    doc.defaultView = win;
-  }
-  const HTMLElement = doc.documentElement.constructor.prototype;
-  if (typeof HTMLElement.getRootNode !== "function") {
-    const elm = doc.createElement("unknown-element");
-    const HTMLUnknownElement = elm.constructor.prototype;
-    HTMLUnknownElement.getRootNode = getRootNode;
-  }
-  if (typeof doc.createEvent === "function") {
-    const CustomEvent = doc.createEvent("CustomEvent").constructor;
-    if (win.CustomEvent !== CustomEvent) {
-      win.CustomEvent = CustomEvent;
-    }
+function patchDomImplementation(e, t) {
+  let r;
+  if (
+    (null != e.defaultView
+      ? ((t.destroyWindow = !0),
+        patchWindow(e.defaultView),
+        (r = e.defaultView))
+      : ((t.destroyWindow = !0),
+        (t.destroyDocument = !1),
+        (r = new MockWindow(!1))),
+    r.document !== e && (r.document = e),
+    e.defaultView !== r && (e.defaultView = r),
+    "function" != typeof e.documentElement.constructor.prototype.getRootNode &&
+      (e.createElement("unknown-element").constructor.prototype.getRootNode =
+        getRootNode),
+    "function" == typeof e.createEvent)
+  ) {
+    const t = e.createEvent("CustomEvent").constructor;
+    r.CustomEvent !== t && (r.CustomEvent = t);
   }
   try {
-    win.__stencil_baseURI = doc.baseURI;
-  } catch (e) {
-    Object.defineProperty(doc, "baseURI", {
+    r.__stencil_baseURI = e.baseURI;
+  } catch (t) {
+    Object.defineProperty(e, "baseURI", {
       get() {
-        const baseElm = doc.querySelector("base[href]");
-        if (baseElm) {
-          return new URL(baseElm.getAttribute("href"), win.location.href).href;
-        }
-        return win.location.href;
+        const t = e.querySelector("base[href]");
+        return t
+          ? new URL(t.getAttribute("href"), r.location.href).href
+          : r.location.href;
       },
     });
   }
-  return win;
+  return r;
 }
-function getRootNode(opts) {
-  const isComposed = opts != null && opts.composed === true;
-  let node = this;
-  while (node.parentNode != null) {
-    node = node.parentNode;
-    if (isComposed === true && node.parentNode == null && node.host != null) {
-      node = node.host;
-    }
-  }
-  return node;
+function getRootNode(e) {
+  const t = null != e && !0 === e.composed;
+  let r = this;
+  for (; null != r.parentNode; )
+    (r = r.parentNode),
+      !0 === t && null == r.parentNode && null != r.host && (r = r.host);
+  return r;
 }
-function normalizeHydrateOptions(inputOpts) {
-  const outputOpts = Object.assign(
-    { serializeToHtml: false, destroyWindow: false, destroyDocument: false },
-    inputOpts || {},
+function normalizeHydrateOptions(e) {
+  const t = Object.assign(
+    { serializeToHtml: !1, destroyWindow: !1, destroyDocument: !1 },
+    e || {},
   );
-  if (typeof outputOpts.clientHydrateAnnotations !== "boolean") {
-    outputOpts.clientHydrateAnnotations = true;
-  }
-  if (typeof outputOpts.constrainTimeouts !== "boolean") {
-    outputOpts.constrainTimeouts = true;
-  }
-  if (typeof outputOpts.maxHydrateCount !== "number") {
-    outputOpts.maxHydrateCount = 300;
-  }
-  if (typeof outputOpts.runtimeLogging !== "boolean") {
-    outputOpts.runtimeLogging = false;
-  }
-  if (typeof outputOpts.timeout !== "number") {
-    outputOpts.timeout = 15e3;
-  }
-  if (Array.isArray(outputOpts.excludeComponents)) {
-    outputOpts.excludeComponents = outputOpts.excludeComponents
-      .filter(filterValidTags)
-      .map(mapValidTags);
-  } else {
-    outputOpts.excludeComponents = [];
-  }
-  if (Array.isArray(outputOpts.staticComponents)) {
-    outputOpts.staticComponents = outputOpts.staticComponents
-      .filter(filterValidTags)
-      .map(mapValidTags);
-  } else {
-    outputOpts.staticComponents = [];
-  }
-  return outputOpts;
+  return (
+    "boolean" != typeof t.clientHydrateAnnotations &&
+      (t.clientHydrateAnnotations = !0),
+    "boolean" != typeof t.constrainTimeouts && (t.constrainTimeouts = !0),
+    "number" != typeof t.maxHydrateCount && (t.maxHydrateCount = 300),
+    "boolean" != typeof t.runtimeLogging && (t.runtimeLogging = !1),
+    "number" != typeof t.timeout && (t.timeout = 15e3),
+    Array.isArray(t.excludeComponents)
+      ? (t.excludeComponents = t.excludeComponents
+          .filter(filterValidTags)
+          .map(mapValidTags))
+      : (t.excludeComponents = []),
+    Array.isArray(t.staticComponents)
+      ? (t.staticComponents = t.staticComponents
+          .filter(filterValidTags)
+          .map(mapValidTags))
+      : (t.staticComponents = []),
+    t
+  );
 }
-function filterValidTags(tag) {
-  return typeof tag === "string" && tag.includes("-");
+function filterValidTags(e) {
+  return "string" == typeof e && e.includes("-");
 }
-function mapValidTags(tag) {
-  return tag.trim().toLowerCase();
+function mapValidTags(e) {
+  return e.trim().toLowerCase();
 }
-function generateHydrateResults(opts) {
-  if (typeof opts.url !== "string") {
-    opts.url = `https://hydrate.stenciljs.com/`;
-  }
-  if (typeof opts.buildId !== "string") {
-    opts.buildId = createHydrateBuildId();
-  }
-  const results = {
-    buildId: opts.buildId,
+function generateHydrateResults(e) {
+  "string" != typeof e.url && (e.url = "https://hydrate.stenciljs.com/"),
+    "string" != typeof e.buildId && (e.buildId = createHydrateBuildId());
+  const t = {
+    buildId: e.buildId,
     diagnostics: [],
-    url: opts.url,
+    url: e.url,
     host: null,
     hostname: null,
     href: null,
@@ -1081,403 +166,976 @@ function generateHydrateResults(opts) {
     title: null,
   };
   try {
-    const url = new URL(opts.url, `https://hydrate.stenciljs.com/`);
-    results.url = url.href;
-    results.host = url.host;
-    results.hostname = url.hostname;
-    results.href = url.href;
-    results.port = url.port;
-    results.pathname = url.pathname;
-    results.search = url.search;
-    results.hash = url.hash;
+    const r = new URL(e.url, "https://hydrate.stenciljs.com/");
+    (t.url = r.href),
+      (t.host = r.host),
+      (t.hostname = r.hostname),
+      (t.href = r.href),
+      (t.port = r.port),
+      (t.pathname = r.pathname),
+      (t.search = r.search),
+      (t.hash = r.hash);
   } catch (e) {
-    renderCatchError(results, e);
+    renderCatchError(t, e);
   }
-  return results;
+  return t;
 }
-var createHydrateBuildId = () => {
-  let chars = "abcdefghijklmnopqrstuvwxyz";
-  let buildId = "";
-  while (buildId.length < 8) {
-    const char = chars[Math.floor(Math.random() * chars.length)];
-    buildId += char;
-    if (buildId.length === 1) {
-      chars += "0123456789";
-    }
-  }
-  return buildId;
-};
-function renderBuildDiagnostic(results, level, header, msg) {
-  const diagnostic = {
-    level: level,
+function renderBuildDiagnostic(e, t, r, s) {
+  const n = {
+    level: t,
     type: "build",
-    header: header,
-    messageText: msg,
+    header: r,
+    messageText: s,
     relFilePath: void 0,
     absFilePath: void 0,
     lines: [],
   };
-  if (results.pathname) {
-    if (results.pathname !== "/") {
-      diagnostic.header += ": " + results.pathname;
-    }
-  } else if (results.url) {
-    diagnostic.header += ": " + results.url;
-  }
-  results.diagnostics.push(diagnostic);
-  return diagnostic;
-}
-function renderBuildError(results, msg) {
-  return renderBuildDiagnostic(results, "error", "Hydrate Error", msg);
-}
-function renderCatchError(results, err2) {
-  const diagnostic = renderBuildError(results, null);
-  if (err2 != null) {
-    if (err2.stack != null) {
-      diagnostic.messageText = err2.stack.toString();
-    } else {
-      if (err2.message != null) {
-        diagnostic.messageText = err2.message.toString();
-      } else {
-        diagnostic.messageText = err2.toString();
-      }
-    }
-  }
-  return diagnostic;
-}
-import { constrainTimeouts } from "@stencil/core/mock-doc";
-function runtimeLogging(win, opts, results) {
-  try {
-    const pathname = win.location.pathname;
-    win.console.error = (...msgs) => {
-      const errMsg = msgs
-        .reduce((errMsg2, m) => {
-          if (m) {
-            if (m.stack != null) {
-              return errMsg2 + " " + String(m.stack);
-            } else {
-              if (m.message != null) {
-                return errMsg2 + " " + String(m.message);
-              }
-            }
-          }
-          return String(m);
-        }, "")
-        .trim();
-      if (errMsg !== "") {
-        renderCatchError(results, errMsg);
-        if (opts.runtimeLogging) {
-          runtimeLog(pathname, "error", [errMsg]);
-        }
-      }
-    };
-    win.console.debug = (...msgs) => {
-      renderBuildDiagnostic(
-        results,
-        "debug",
-        "Hydrate Debug",
-        [...msgs].join(", "),
-      );
-      if (opts.runtimeLogging) {
-        runtimeLog(pathname, "debug", msgs);
-      }
-    };
-    if (opts.runtimeLogging) {
-      ["log", "warn", "assert", "info", "trace"].forEach((type) => {
-        win.console[type] = (...msgs) => {
-          runtimeLog(pathname, type, msgs);
-        };
-      });
-    }
-  } catch (e) {
-    renderCatchError(results, e);
-  }
-}
-function runtimeLog(pathname, type, msgs) {
-  global.console[type].apply(global.console, [
-    `[ ${pathname}  ${type} ] `,
-    ...msgs,
-  ]);
-}
-function initializeWindow(win, doc, opts, results) {
-  try {
-    win.location.href = opts.url;
-  } catch (e) {
-    renderCatchError(results, e);
-  }
-  if (typeof opts.userAgent === "string") {
-    try {
-      win.navigator.userAgent = opts.userAgent;
-    } catch (e) {}
-  }
-  if (typeof opts.cookie === "string") {
-    try {
-      doc.cookie = opts.cookie;
-    } catch (e) {}
-  }
-  if (typeof opts.referrer === "string") {
-    try {
-      doc.referrer = opts.referrer;
-    } catch (e) {}
-  }
-  if (typeof opts.direction === "string") {
-    try {
-      doc.documentElement.setAttribute("dir", opts.direction);
-    } catch (e) {}
-  }
-  if (typeof opts.language === "string") {
-    try {
-      doc.documentElement.setAttribute("lang", opts.language);
-    } catch (e) {}
-  }
-  if (typeof opts.buildId === "string") {
-    try {
-      doc.documentElement.setAttribute("data-stencil-build", opts.buildId);
-    } catch (e) {}
-  }
-  try {
-    win.customElements = null;
-  } catch (e) {}
-  if (opts.constrainTimeouts) {
-    constrainTimeouts(win);
-  }
-  runtimeLogging(win, opts, results);
-  return win;
-}
-function renderToString(html, options) {
-  const opts = normalizeHydrateOptions(options);
-  opts.serializeToHtml = true;
-  return new Promise((resolve) => {
-    let win;
-    const results = generateHydrateResults(opts);
-    if (hasError(results.diagnostics)) {
-      resolve(results);
-    } else if (typeof html === "string") {
-      try {
-        opts.destroyWindow = true;
-        opts.destroyDocument = true;
-        win = new MockWindow3(html);
-        render(win, opts, results, resolve);
-      } catch (e) {
-        if (win && win.close) {
-          win.close();
-        }
-        win = null;
-        renderCatchError(results, e);
-        resolve(results);
-      }
-    } else if (isValidDocument(html)) {
-      try {
-        opts.destroyDocument = false;
-        win = patchDomImplementation(html, opts);
-        render(win, opts, results, resolve);
-      } catch (e) {
-        if (win && win.close) {
-          win.close();
-        }
-        win = null;
-        renderCatchError(results, e);
-        resolve(results);
-      }
-    } else {
-      renderBuildError(
-        results,
-        `Invalid html or document. Must be either a valid "html" string, or DOM "document".`,
-      );
-      resolve(results);
-    }
-  });
-}
-function hydrateDocument(doc, options) {
-  const opts = normalizeHydrateOptions(options);
-  opts.serializeToHtml = false;
-  return new Promise((resolve) => {
-    let win;
-    const results = generateHydrateResults(opts);
-    if (hasError(results.diagnostics)) {
-      resolve(results);
-    } else if (typeof doc === "string") {
-      try {
-        opts.destroyWindow = true;
-        opts.destroyDocument = true;
-        win = new MockWindow3(doc);
-        render(win, opts, results, resolve);
-      } catch (e) {
-        if (win && win.close) {
-          win.close();
-        }
-        win = null;
-        renderCatchError(results, e);
-        resolve(results);
-      }
-    } else if (isValidDocument(doc)) {
-      try {
-        opts.destroyDocument = false;
-        win = patchDomImplementation(doc, opts);
-        render(win, opts, results, resolve);
-      } catch (e) {
-        if (win && win.close) {
-          win.close();
-        }
-        win = null;
-        renderCatchError(results, e);
-        resolve(results);
-      }
-    } else {
-      renderBuildError(
-        results,
-        `Invalid html or document. Must be either a valid "html" string, or DOM "document".`,
-      );
-      resolve(results);
-    }
-  });
-}
-function render(win, opts, results, resolve) {
-  if (!process.__stencilErrors) {
-    process.__stencilErrors = true;
-    process.on("unhandledRejection", (e) => {
-      console.log("unhandledRejection", e);
-    });
-  }
-  initializeWindow(win, win.document, opts, results);
-  if (typeof opts.beforeHydrate === "function") {
-    try {
-      const rtn = opts.beforeHydrate(win.document);
-      if (isPromise(rtn)) {
-        rtn.then(() => {
-          hydrateFactory(win, opts, results, afterHydrate, resolve);
-        });
-      } else {
-        hydrateFactory(win, opts, results, afterHydrate, resolve);
-      }
-    } catch (e) {
-      renderCatchError(results, e);
-      finalizeHydrate(win, win.document, opts, results, resolve);
-    }
-  } else {
-    hydrateFactory(win, opts, results, afterHydrate, resolve);
-  }
-}
-function afterHydrate(win, opts, results, resolve) {
-  if (typeof opts.afterHydrate === "function") {
-    try {
-      const rtn = opts.afterHydrate(win.document);
-      if (isPromise(rtn)) {
-        rtn.then(() => {
-          finalizeHydrate(win, win.document, opts, results, resolve);
-        });
-      } else {
-        finalizeHydrate(win, win.document, opts, results, resolve);
-      }
-    } catch (e) {
-      renderCatchError(results, e);
-      finalizeHydrate(win, win.document, opts, results, resolve);
-    }
-  } else {
-    finalizeHydrate(win, win.document, opts, results, resolve);
-  }
-}
-function finalizeHydrate(win, doc, opts, results, resolve) {
-  try {
-    inspectElement(results, doc.documentElement, 0);
-    if (opts.removeUnusedStyles !== false) {
-      try {
-        removeUnusedStyles(doc, results.diagnostics);
-      } catch (e) {
-        renderCatchError(results, e);
-      }
-    }
-    if (typeof opts.title === "string") {
-      try {
-        doc.title = opts.title;
-      } catch (e) {
-        renderCatchError(results, e);
-      }
-    }
-    results.title = doc.title;
-    if (opts.removeScripts) {
-      removeScripts(doc.documentElement);
-    }
-    try {
-      updateCanonicalLink(doc, opts.canonicalUrl);
-    } catch (e) {
-      renderCatchError(results, e);
-    }
-    try {
-      relocateMetaCharset(doc);
-    } catch (e) {}
-    if (!hasError(results.diagnostics)) {
-      results.httpStatus = 200;
-    }
-    try {
-      const metaStatus = doc.head.querySelector('meta[http-equiv="status"]');
-      if (metaStatus != null) {
-        const metaStatusContent = metaStatus.getAttribute("content");
-        if (metaStatusContent && metaStatusContent.length > 0) {
-          results.httpStatus = parseInt(metaStatusContent, 10);
-        }
-      }
-    } catch (e) {}
-    if (opts.clientHydrateAnnotations) {
-      doc.documentElement.classList.add("hydrated");
-    }
-    if (opts.serializeToHtml) {
-      results.html = serializeDocumentToString(doc, opts);
-    }
-  } catch (e) {
-    renderCatchError(results, e);
-  }
-  if (opts.destroyWindow) {
-    try {
-      if (!opts.destroyDocument) {
-        win.document = null;
-        doc.defaultView = null;
-      }
-      if (win.close) {
-        win.close();
-      }
-    } catch (e) {
-      renderCatchError(results, e);
-    }
-  }
-  resolve(results);
-}
-function serializeDocumentToString(doc, opts) {
-  return serializeNodeToHtml(doc, {
-    approximateLineWidth: opts.approximateLineWidth,
-    outerHtml: false,
-    prettyHtml: opts.prettyHtml,
-    removeAttributeQuotes: opts.removeAttributeQuotes,
-    removeBooleanAttributeQuotes: opts.removeBooleanAttributeQuotes,
-    removeEmptyAttributes: opts.removeEmptyAttributes,
-    removeHtmlComments: opts.removeHtmlComments,
-    serializeShadowRoot: false,
-  });
-}
-function isValidDocument(doc) {
   return (
-    doc != null &&
-    doc.nodeType === 9 &&
-    doc.documentElement != null &&
-    doc.documentElement.nodeType === 1 &&
-    doc.body != null &&
-    doc.body.nodeType === 1
+    e.pathname
+      ? "/" !== e.pathname && (n.header += ": " + e.pathname)
+      : e.url && (n.header += ": " + e.url),
+    e.diagnostics.push(n),
+    n
   );
 }
-function removeScripts(elm) {
-  const children = elm.children;
-  for (let i = children.length - 1; i >= 0; i--) {
-    const child = children[i];
-    removeScripts(child);
-    if (
-      child.nodeName === "SCRIPT" ||
-      (child.nodeName === "LINK" &&
-        child.getAttribute("rel") === "modulepreload")
-    ) {
-      child.remove();
+function renderBuildError(e, t) {
+  return renderBuildDiagnostic(e, "error", "Hydrate Error", t);
+}
+function renderCatchError(e, t) {
+  const r = renderBuildError(e, null);
+  return (
+    null != t &&
+      (null != t.stack
+        ? (r.messageText = t.stack.toString())
+        : null != t.message
+          ? (r.messageText = t.message.toString())
+          : (r.messageText = t.toString())),
+    r
+  );
+}
+function runtimeLog(e, t, r) {
+  global.console[t].apply(global.console, [`[ ${e}  ${t} ] `, ...r]);
+}
+function renderToString(e, t) {
+  const r = normalizeHydrateOptions(t);
+  return (
+    (r.serializeToHtml = !0),
+    new Promise((t) => {
+      let s;
+      const n = generateHydrateResults(r);
+      if (hasError(n.diagnostics)) t(n);
+      else if ("string" == typeof e)
+        try {
+          (r.destroyWindow = !0),
+            (r.destroyDocument = !0),
+            (s = new MockWindow(e)),
+            render(s, r, n, t);
+        } catch (e) {
+          s && s.close && s.close(), (s = null), renderCatchError(n, e), t(n);
+        }
+      else if (isValidDocument(e))
+        try {
+          (r.destroyDocument = !1),
+            (s = patchDomImplementation(e, r)),
+            render(s, r, n, t);
+        } catch (e) {
+          s && s.close && s.close(), (s = null), renderCatchError(n, e), t(n);
+        }
+      else
+        renderBuildError(
+          n,
+          'Invalid html or document. Must be either a valid "html" string, or DOM "document".',
+        ),
+          t(n);
+    })
+  );
+}
+function hydrateDocument(e, t) {
+  const r = normalizeHydrateOptions(t);
+  return (
+    (r.serializeToHtml = !1),
+    new Promise((t) => {
+      let s;
+      const n = generateHydrateResults(r);
+      if (hasError(n.diagnostics)) t(n);
+      else if ("string" == typeof e)
+        try {
+          (r.destroyWindow = !0),
+            (r.destroyDocument = !0),
+            (s = new MockWindow(e)),
+            render(s, r, n, t);
+        } catch (e) {
+          s && s.close && s.close(), (s = null), renderCatchError(n, e), t(n);
+        }
+      else if (isValidDocument(e))
+        try {
+          (r.destroyDocument = !1),
+            (s = patchDomImplementation(e, r)),
+            render(s, r, n, t);
+        } catch (e) {
+          s && s.close && s.close(), (s = null), renderCatchError(n, e), t(n);
+        }
+      else
+        renderBuildError(
+          n,
+          'Invalid html or document. Must be either a valid "html" string, or DOM "document".',
+        ),
+          t(n);
+    })
+  );
+}
+function render(e, t, r, s) {
+  if (
+    (process.__stencilErrors ||
+      ((process.__stencilErrors = !0),
+      process.on("unhandledRejection", (e) => {
+        console.log("unhandledRejection", e);
+      })),
+    (function n(e, t, r, s) {
+      try {
+        e.location.href = r.url;
+      } catch (e) {
+        renderCatchError(s, e);
+      }
+      if ("string" == typeof r.userAgent)
+        try {
+          e.navigator.userAgent = r.userAgent;
+        } catch (e) {}
+      if ("string" == typeof r.cookie)
+        try {
+          t.cookie = r.cookie;
+        } catch (e) {}
+      if ("string" == typeof r.referrer)
+        try {
+          t.referrer = r.referrer;
+        } catch (e) {}
+      if ("string" == typeof r.direction)
+        try {
+          t.documentElement.setAttribute("dir", r.direction);
+        } catch (e) {}
+      if ("string" == typeof r.language)
+        try {
+          t.documentElement.setAttribute("lang", r.language);
+        } catch (e) {}
+      if ("string" == typeof r.buildId)
+        try {
+          t.documentElement.setAttribute("data-stencil-build", r.buildId);
+        } catch (e) {}
+      try {
+        e.customElements = null;
+      } catch (e) {}
+      return (
+        r.constrainTimeouts && constrainTimeouts(e),
+        (function n(e, t, r) {
+          try {
+            const s = e.location.pathname;
+            (e.console.error = (...e) => {
+              const n = e
+                .reduce((e, t) => {
+                  if (t) {
+                    if (null != t.stack) return e + " " + String(t.stack);
+                    if (null != t.message) return e + " " + String(t.message);
+                  }
+                  return String(t);
+                }, "")
+                .trim();
+              "" !== n &&
+                (renderCatchError(r, n),
+                t.runtimeLogging && runtimeLog(s, "error", [n]));
+            }),
+              (e.console.debug = (...e) => {
+                renderBuildDiagnostic(
+                  r,
+                  "debug",
+                  "Hydrate Debug",
+                  [...e].join(", "),
+                ),
+                  t.runtimeLogging && runtimeLog(s, "debug", e);
+              }),
+              t.runtimeLogging &&
+                ["log", "warn", "assert", "info", "trace"].forEach((t) => {
+                  e.console[t] = (...e) => {
+                    runtimeLog(s, t, e);
+                  };
+                });
+          } catch (e) {
+            renderCatchError(r, e);
+          }
+        })(e, r, s),
+        e
+      );
+    })(e, e.document, t, r),
+    "function" == typeof t.beforeHydrate)
+  )
+    try {
+      const n = t.beforeHydrate(e.document);
+      isPromise(n)
+        ? n.then(() => {
+            hydrateFactory(e, t, r, afterHydrate, s);
+          })
+        : hydrateFactory(e, t, r, afterHydrate, s);
+    } catch (n) {
+      renderCatchError(r, n), finalizeHydrate(e, e.document, t, r, s);
     }
+  else hydrateFactory(e, t, r, afterHydrate, s);
+}
+function afterHydrate(e, t, r, s) {
+  if ("function" == typeof t.afterHydrate)
+    try {
+      const n = t.afterHydrate(e.document);
+      isPromise(n)
+        ? n.then(() => {
+            finalizeHydrate(e, e.document, t, r, s);
+          })
+        : finalizeHydrate(e, e.document, t, r, s);
+    } catch (n) {
+      renderCatchError(r, n), finalizeHydrate(e, e.document, t, r, s);
+    }
+  else finalizeHydrate(e, e.document, t, r, s);
+}
+function finalizeHydrate(e, t, r, s, n) {
+  try {
+    if ((inspectElement(s, t.documentElement, 0), !1 !== r.removeUnusedStyles))
+      try {
+        removeUnusedStyles(t, s.diagnostics);
+      } catch (e) {
+        renderCatchError(s, e);
+      }
+    if ("string" == typeof r.title)
+      try {
+        t.title = r.title;
+      } catch (e) {
+        renderCatchError(s, e);
+      }
+    (s.title = t.title), r.removeScripts && removeScripts(t.documentElement);
+    try {
+      updateCanonicalLink(t, r.canonicalUrl);
+    } catch (e) {
+      renderCatchError(s, e);
+    }
+    try {
+      relocateMetaCharset(t);
+    } catch (e) {}
+    hasError(s.diagnostics) || (s.httpStatus = 200);
+    try {
+      const e = t.head.querySelector('meta[http-equiv="status"]');
+      if (null != e) {
+        const t = e.getAttribute("content");
+        t && t.length > 0 && (s.httpStatus = parseInt(t, 10));
+      }
+    } catch (e) {}
+    r.clientHydrateAnnotations && t.documentElement.classList.add("hydrated"),
+      r.serializeToHtml && (s.html = serializeDocumentToString(t, r));
+  } catch (e) {
+    renderCatchError(s, e);
+  }
+  if (r.destroyWindow)
+    try {
+      r.destroyDocument || ((e.document = null), (t.defaultView = null)),
+        e.close && e.close();
+    } catch (e) {
+      renderCatchError(s, e);
+    }
+  n(s);
+}
+function serializeDocumentToString(e, t) {
+  return serializeNodeToHtml(e, {
+    approximateLineWidth: t.approximateLineWidth,
+    outerHtml: !1,
+    prettyHtml: t.prettyHtml,
+    removeAttributeQuotes: t.removeAttributeQuotes,
+    removeBooleanAttributeQuotes: t.removeBooleanAttributeQuotes,
+    removeEmptyAttributes: t.removeEmptyAttributes,
+    removeHtmlComments: t.removeHtmlComments,
+    serializeShadowRoot: !1,
+  });
+}
+function isValidDocument(e) {
+  return (
+    null != e &&
+    9 === e.nodeType &&
+    null != e.documentElement &&
+    1 === e.documentElement.nodeType &&
+    null != e.body &&
+    1 === e.body.nodeType
+  );
+}
+function removeScripts(e) {
+  const t = e.children;
+  for (let e = t.length - 1; e >= 0; e--) {
+    const r = t[e];
+    removeScripts(r),
+      ("SCRIPT" === r.nodeName ||
+        ("LINK" === r.nodeName && "modulepreload" === r.getAttribute("rel"))) &&
+        r.remove();
   }
 }
+import {
+  MockWindow,
+  cloneWindow,
+  patchWindow,
+  constrainTimeouts,
+  serializeNodeToHtml,
+} from "@stencil/core/mock-doc";
+import { hydrateFactory } from "@stencil/core/hydrate-factory";
+const templateWindows = new Map(),
+  isPromise = (e) =>
+    !!e &&
+    ("object" == typeof e || "function" == typeof e) &&
+    "function" == typeof e.then,
+  hasError = (e) =>
+    null != e &&
+    0 !== e.length &&
+    e.some((e) => "error" === e.level && "runtime" !== e.type),
+  TASK_CANCELED_MSG = "task canceled",
+  updateCanonicalLink = (e, t) => {
+    let r = e.head.querySelector('link[rel="canonical"]');
+    "string" == typeof t
+      ? (null == r &&
+          ((r = e.createElement("link")),
+          r.setAttribute("rel", "canonical"),
+          e.head.appendChild(r)),
+        r.setAttribute("href", t))
+      : null != r && (r.getAttribute("href") || r.parentNode.removeChild(r));
+  },
+  relocateMetaCharset = (e) => {
+    const t = e.head;
+    let r = t.querySelector("meta[charset]");
+    null == r
+      ? ((r = e.createElement("meta")), r.setAttribute("charset", "utf-8"))
+      : r.remove(),
+      t.insertBefore(r, t.firstChild);
+  },
+  parseCss = (e, t) => {
+    let r = 1,
+      s = 1;
+    const n = [],
+      o = (e) => {
+        const t = e.match(/\n/g);
+        t && (r += t.length);
+        const n = e.lastIndexOf("\n");
+        s = ~n ? e.length - n : s + e.length;
+      },
+      i = () => {
+        const e = { line: r, column: s };
+        return (t) => ((t.position = new A(e)), m(), t);
+      },
+      a = (o) => {
+        const i = e.split("\n"),
+          a = {
+            level: "error",
+            type: "css",
+            language: "css",
+            header: "CSS Parse",
+            messageText: o,
+            absFilePath: t,
+            lines: [
+              {
+                lineIndex: r - 1,
+                lineNumber: r,
+                errorCharStart: s,
+                text: e[r - 1],
+              },
+            ],
+          };
+        if (r > 1) {
+          const t = {
+            lineIndex: r - 1,
+            lineNumber: r - 1,
+            text: e[r - 2],
+            errorCharStart: -1,
+            errorLength: -1,
+          };
+          a.lines.unshift(t);
+        }
+        if (r + 2 < i.length) {
+          const e = {
+            lineIndex: r,
+            lineNumber: r + 1,
+            text: i[r],
+            errorCharStart: -1,
+            errorLength: -1,
+          };
+          a.lines.push(e);
+        }
+        return n.push(a), null;
+      },
+      l = () => u(/^{\s*/),
+      c = () => u(/^}/),
+      u = (t) => {
+        const r = t.exec(e);
+        if (!r) return;
+        const s = r[0];
+        return o(s), (e = e.slice(s.length)), r;
+      },
+      d = () => {
+        let t;
+        const r = [];
+        for (m(), h(r); e.length && "}" !== e.charAt(0) && (t = T() || w()); )
+          r.push(t), h(r);
+        return r;
+      },
+      m = () => u(/^\s*/),
+      h = (e) => {
+        let t;
+        for (e = e || []; (t = p()); ) e.push(t);
+        return e;
+      },
+      p = () => {
+        const t = i();
+        if ("/" !== e.charAt(0) || "*" !== e.charAt(1)) return null;
+        let r = 2;
+        for (
+          ;
+          "" !== e.charAt(r) &&
+          ("*" !== e.charAt(r) || "/" !== e.charAt(r + 1));
+
+        )
+          ++r;
+        if (((r += 2), "" === e.charAt(r - 1)))
+          return a("End of comment missing");
+        const n = e.slice(2, r - 2);
+        return (
+          (s += 2), o(n), (e = e.slice(r)), (s += 2), t({ type: 1, comment: n })
+        );
+      },
+      f = () => {
+        const e = u(/^([^{]+)/);
+        return e
+          ? trim(e[0])
+              .replace(/\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*\/+/g, "")
+              .replace(/"(?:\\"|[^"])*"|'(?:\\'|[^'])*'/g, function (e) {
+                return e.replace(/,/g, "‌");
+              })
+              .split(/\s*(?![^(]*\)),\s*/)
+              .map(function (e) {
+                return e.replace(/\u200C/g, ",");
+              })
+          : null;
+      },
+      g = () => {
+        const e = i();
+        let t = u(/^(\*?[-#\/\*\\\w]+(\[[0-9a-z_-]+\])?)\s*/);
+        if (!t) return null;
+        if (((t = trim(t[0])), !u(/^:\s*/))) return a("property missing ':'");
+        const r = u(/^((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^\)]*?\)|[^};])+)/),
+          s = e({
+            type: 4,
+            property: t.replace(commentre, ""),
+            value: r ? trim(r[0]).replace(commentre, "") : "",
+          });
+        return u(/^[;\s]*/), s;
+      },
+      y = () => {
+        const e = [];
+        if (!l()) return a("missing '{'");
+        let t;
+        for (h(e); (t = g()); ) e.push(t), h(e);
+        return c() ? e : a("missing '}'");
+      },
+      C = () => {
+        let e;
+        const t = [],
+          r = i();
+        for (; (e = u(/^((\d+\.\d+|\.\d+|\d+)%?|[a-z]+)\s*/)); )
+          t.push(e[1]), u(/^,\s*/);
+        return t.length ? r({ type: 9, values: t, declarations: y() }) : null;
+      },
+      S = (e, t) => {
+        const r = new RegExp("^@" + e + "\\s*([^;]+);");
+        return () => {
+          const s = i(),
+            n = u(r);
+          if (!n) return null;
+          const o = { type: t };
+          return (o[e] = n[1].trim()), s(o);
+        };
+      },
+      E = S("import", 7),
+      b = S("charset", 0),
+      v = S("namespace", 11),
+      T = () =>
+        "@" !== e[0]
+          ? null
+          : (() => {
+              const e = i();
+              let t = u(/^@([-\w]+)?keyframes\s*/);
+              if (!t) return null;
+              const r = t[1];
+              if (((t = u(/^([-\w]+)\s*/)), !t))
+                return a("@keyframes missing name");
+              const s = t[1];
+              if (!l()) return a("@keyframes missing '{'");
+              let n,
+                o = h();
+              for (; (n = C()); ) o.push(n), (o = o.concat(h()));
+              return c()
+                ? e({ type: 8, name: s, vendor: r, keyframes: o })
+                : a("@keyframes missing '}'");
+            })() ||
+            (() => {
+              const e = i(),
+                t = u(/^@media *([^{]+)/);
+              if (!t) return null;
+              const r = trim(t[1]);
+              if (!l()) return a("@media missing '{'");
+              const s = h().concat(d());
+              return c()
+                ? e({ type: 10, media: r, rules: s })
+                : a("@media missing '}'");
+            })() ||
+            (() => {
+              const e = i(),
+                t = u(/^@custom-media\s+(--[^\s]+)\s*([^{;]+);/);
+              return t
+                ? e({ type: 2, name: trim(t[1]), media: trim(t[2]) })
+                : null;
+            })() ||
+            (() => {
+              const e = i(),
+                t = u(/^@supports *([^{]+)/);
+              if (!t) return null;
+              const r = trim(t[1]);
+              if (!l()) return a("@supports missing '{'");
+              const s = h().concat(d());
+              return c()
+                ? e({ type: 15, supports: r, rules: s })
+                : a("@supports missing '}'");
+            })() ||
+            E() ||
+            b() ||
+            v() ||
+            (() => {
+              const e = i(),
+                t = u(/^@([-\w]+)?document *([^{]+)/);
+              if (!t) return null;
+              const r = trim(t[1]),
+                s = trim(t[2]);
+              if (!l()) return a("@document missing '{'");
+              const n = h().concat(d());
+              return c()
+                ? e({ type: 3, document: s, vendor: r, rules: n })
+                : a("@document missing '}'");
+            })() ||
+            (() => {
+              const e = i();
+              if (!u(/^@page */)) return null;
+              const t = f() || [];
+              if (!l()) return a("@page missing '{'");
+              let r,
+                s = h();
+              for (; (r = g()); ) s.push(r), (s = s.concat(h()));
+              return c()
+                ? e({ type: 12, selectors: t, declarations: s })
+                : a("@page missing '}'");
+            })() ||
+            (() => {
+              const e = i();
+              if (!u(/^@host\s*/)) return null;
+              if (!l()) return a("@host missing '{'");
+              const t = h().concat(d());
+              return c() ? e({ type: 6, rules: t }) : a("@host missing '}'");
+            })() ||
+            (() => {
+              const e = i();
+              if (!u(/^@font-face\s*/)) return null;
+              if (!l()) return a("@font-face missing '{'");
+              let t,
+                r = h();
+              for (; (t = g()); ) r.push(t), (r = r.concat(h()));
+              return c()
+                ? e({ type: 5, declarations: r })
+                : a("@font-face missing '}'");
+            })(),
+      w = () => {
+        const e = i(),
+          t = f();
+        return t
+          ? (h(), e({ type: 13, selectors: t, declarations: y() }))
+          : a("selector missing");
+      };
+    class A {
+      constructor(e) {
+        (this.start = e),
+          (this.end = { line: r, column: s }),
+          (this.source = t);
+      }
+    }
+    return (
+      (A.prototype.content = e),
+      {
+        diagnostics: n,
+        ...addParent(
+          (() => {
+            const e = d();
+            return { type: 14, stylesheet: { source: t, rules: e } };
+          })(),
+        ),
+      }
+    );
+  },
+  trim = (e) => (e ? e.trim() : ""),
+  addParent = (e, t) => {
+    const r = e && "string" == typeof e.type,
+      s = r ? e : t;
+    for (const t in e) {
+      const r = e[t];
+      Array.isArray(r)
+        ? r.forEach(function (e) {
+            addParent(e, s);
+          })
+        : r && "object" == typeof r && addParent(r, s);
+    }
+    return (
+      r &&
+        Object.defineProperty(e, "parent", {
+          configurable: !0,
+          writable: !0,
+          enumerable: !1,
+          value: t || null,
+        }),
+      e
+    );
+  },
+  commentre = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g,
+  getCssSelectors = (e) => {
+    SELECTORS.all.length =
+      SELECTORS.tags.length =
+      SELECTORS.classNames.length =
+      SELECTORS.ids.length =
+      SELECTORS.attrs.length =
+        0;
+    const t = (e = e
+      .replace(/\./g, " .")
+      .replace(/\#/g, " #")
+      .replace(/\[/g, " [")
+      .replace(/\>/g, " > ")
+      .replace(/\+/g, " + ")
+      .replace(/\~/g, " ~ ")
+      .replace(/\*/g, " * ")
+      .replace(/\:not\((.*?)\)/g, " ")).split(" ");
+    for (let e = 0, r = t.length; e < r; e++)
+      (t[e] = t[e].split(":")[0]),
+        0 !== t[e].length &&
+          ("." === t[e].charAt(0)
+            ? SELECTORS.classNames.push(t[e].slice(1))
+            : "#" === t[e].charAt(0)
+              ? SELECTORS.ids.push(t[e].slice(1))
+              : "[" === t[e].charAt(0)
+                ? ((t[e] = t[e].slice(1).split("=")[0].split("]")[0].trim()),
+                  SELECTORS.attrs.push(t[e].toLowerCase()))
+                : /[a-z]/g.test(t[e].charAt(0)) &&
+                  SELECTORS.tags.push(t[e].toLowerCase()));
+    return (
+      (SELECTORS.classNames = SELECTORS.classNames.sort((e, t) =>
+        e.length < t.length ? -1 : e.length > t.length ? 1 : 0,
+      )),
+      SELECTORS
+    );
+  },
+  SELECTORS = { all: [], tags: [], classNames: [], ids: [], attrs: [] },
+  serializeCssVisitNode = (e, t, r, s) => {
+    var n;
+    const o = t.type;
+    return 4 === o
+      ? serializeCssDeclaration(t, r, s)
+      : 13 === o
+        ? serializeCssRule(e, t)
+        : 1 === o
+          ? "!" === (null === (n = t.comment) || void 0 === n ? void 0 : n[0])
+            ? `/*${t.comment}*/`
+            : ""
+          : 10 === o
+            ? serializeCssMedia(e, t)
+            : 8 === o
+              ? serializeCssKeyframes(e, t)
+              : 9 === o
+                ? serializeCssKeyframe(e, t)
+                : 5 === o
+                  ? serializeCssFontFace(e, t)
+                  : 15 === o
+                    ? serializeCssSupports(e, t)
+                    : 7 === o
+                      ? "@import " + t.import + ";"
+                      : 0 === o
+                        ? "@charset " + t.charset + ";"
+                        : 12 === o
+                          ? serializeCssPage(e, t)
+                          : 6 === o
+                            ? "@host{" + serializeCssMapVisit(e, t.rules) + "}"
+                            : 2 === o
+                              ? "@custom-media " + t.name + " " + t.media + ";"
+                              : 3 === o
+                                ? serializeCssDocument(e, t)
+                                : 11 === o
+                                  ? "@namespace " + t.namespace + ";"
+                                  : "";
+  },
+  serializeCssRule = (e, t) => {
+    var r, s;
+    const n = t.declarations,
+      o = e.usedSelectors,
+      i =
+        null !==
+          (s =
+            null === (r = t.selectors) || void 0 === r ? void 0 : r.slice()) &&
+        void 0 !== s
+          ? s
+          : [];
+    if (null == n || 0 === n.length) return "";
+    if (o) {
+      let t,
+        r,
+        s = !0;
+      for (t = i.length - 1; t >= 0; t--) {
+        const n = getCssSelectors(i[t]);
+        s = !0;
+        let a = n.classNames.length;
+        if (a > 0 && e.hasUsedClassNames)
+          for (r = 0; r < a; r++)
+            if (!o.classNames.has(n.classNames[r])) {
+              s = !1;
+              break;
+            }
+        if (s && e.hasUsedTags && ((a = n.tags.length), a > 0))
+          for (r = 0; r < a; r++)
+            if (!o.tags.has(n.tags[r])) {
+              s = !1;
+              break;
+            }
+        if (s && e.hasUsedAttrs && ((a = n.attrs.length), a > 0))
+          for (r = 0; r < a; r++)
+            if (!o.attrs.has(n.attrs[r])) {
+              s = !1;
+              break;
+            }
+        if (s && e.hasUsedIds && ((a = n.ids.length), a > 0))
+          for (r = 0; r < a; r++)
+            if (!o.ids.has(n.ids[r])) {
+              s = !1;
+              break;
+            }
+        s || i.splice(t, 1);
+      }
+    }
+    if (0 === i.length) return "";
+    const a = [];
+    let l = "";
+    if (t.selectors)
+      for (const e of t.selectors)
+        (l = removeSelectorWhitespace(e)), a.includes(l) || a.push(l);
+    return `${a}{${serializeCssMapVisit(e, n)}}`;
+  },
+  serializeCssDeclaration = (e, t, r) =>
+    "" === e.value
+      ? ""
+      : r - 1 === t
+        ? e.property + ":" + e.value
+        : e.property + ":" + e.value + ";",
+  serializeCssMedia = (e, t) => {
+    const r = serializeCssMapVisit(e, t.rules);
+    return "" === r
+      ? ""
+      : "@media " + removeMediaWhitespace(t.media) + "{" + r + "}";
+  },
+  serializeCssKeyframes = (e, t) => {
+    const r = serializeCssMapVisit(e, t.keyframes);
+    return "" === r
+      ? ""
+      : "@" + (t.vendor || "") + "keyframes " + t.name + "{" + r + "}";
+  },
+  serializeCssKeyframe = (e, t) => {
+    var r, s;
+    return (
+      (null !==
+        (s = null === (r = t.values) || void 0 === r ? void 0 : r.join(",")) &&
+      void 0 !== s
+        ? s
+        : "") +
+      "{" +
+      serializeCssMapVisit(e, t.declarations) +
+      "}"
+    );
+  },
+  serializeCssFontFace = (e, t) => {
+    const r = serializeCssMapVisit(e, t.declarations);
+    return "" === r ? "" : "@font-face{" + r + "}";
+  },
+  serializeCssSupports = (e, t) => {
+    const r = serializeCssMapVisit(e, t.rules);
+    return "" === r ? "" : "@supports " + t.supports + "{" + r + "}";
+  },
+  serializeCssPage = (e, t) => {
+    var r, s;
+    return (
+      "@page " +
+      (null !==
+        (s =
+          null === (r = t.selectors) || void 0 === r ? void 0 : r.join(", ")) &&
+      void 0 !== s
+        ? s
+        : "") +
+      "{" +
+      serializeCssMapVisit(e, t.declarations) +
+      "}"
+    );
+  },
+  serializeCssDocument = (e, t) => {
+    const r = serializeCssMapVisit(e, t.rules),
+      s = "@" + (t.vendor || "") + "document " + t.document;
+    return "" === r ? "" : s + "{" + r + "}";
+  },
+  serializeCssMapVisit = (e, t) => {
+    let r = "";
+    if (t)
+      for (let s = 0, n = t.length; s < n; s++)
+        r += serializeCssVisitNode(e, t[s], s, n);
+    return r;
+  },
+  removeSelectorWhitespace = (e) => {
+    let t = "",
+      r = "",
+      s = !1;
+    for (let n = 0, o = (e = e.trim()).length; n < o; n++)
+      if (
+        ((r = e[n]),
+        "[" === r && "\\" !== t[t.length - 1]
+          ? (s = !0)
+          : "]" === r && "\\" !== t[t.length - 1] && (s = !1),
+        !s && CSS_WS_REG.test(r))
+      ) {
+        if (CSS_NEXT_CHAR_REG.test(e[n + 1])) continue;
+        if (CSS_PREV_CHAR_REG.test(t[t.length - 1])) continue;
+        t += " ";
+      } else t += r;
+    return t;
+  },
+  removeMediaWhitespace = (e) => {
+    var t;
+    let r = "",
+      s = "";
+    for (
+      let n = 0,
+        o = (e =
+          null !== (t = null == e ? void 0 : e.trim()) && void 0 !== t ? t : "")
+          .length;
+      n < o;
+      n++
+    )
+      if (((s = e[n]), CSS_WS_REG.test(s))) {
+        if (CSS_WS_REG.test(r[r.length - 1])) continue;
+        r += " ";
+      } else r += s;
+    return r;
+  },
+  CSS_WS_REG = /\s/,
+  CSS_NEXT_CHAR_REG = /[>\(\)\~\,\+\s]/,
+  CSS_PREV_CHAR_REG = /[>\(\~\,\+]/,
+  collectUsedSelectors = (e, t) => {
+    if (null != t && 1 === t.nodeType) {
+      const r = t.children,
+        s = t.nodeName.toLowerCase();
+      e.tags.add(s);
+      const n = t.attributes;
+      for (let r = 0, s = n.length; r < s; r++) {
+        const s = n.item(r),
+          o = s.name.toLowerCase();
+        if ((e.attrs.add(o), "class" === o)) {
+          const r = t.classList;
+          for (let t = 0, s = r.length; t < s; t++) e.classNames.add(r.item(t));
+        } else "id" === o && e.ids.add(s.value);
+      }
+      if (r)
+        for (let t = 0, s = r.length; t < s; t++) collectUsedSelectors(e, r[t]);
+    }
+  },
+  removeUnusedStyles = (e, t) => {
+    try {
+      const r = e.head.querySelectorAll("style[data-styles]"),
+        s = r.length;
+      if (s > 0) {
+        const n = ((e) => {
+          const t = {
+            attrs: new Set(),
+            classNames: new Set(),
+            ids: new Set(),
+            tags: new Set(),
+          };
+          return collectUsedSelectors(t, e), t;
+        })(e.documentElement);
+        for (let e = 0; e < s; e++) removeUnusedStyleText(n, t, r[e]);
+      }
+    } catch (e) {
+      ((e, t, r) => {
+        const s = {
+          level: "error",
+          type: "build",
+          header: "Build Error",
+          messageText: "build error",
+          lines: [],
+        };
+        null != t &&
+          (null != t.stack
+            ? (s.messageText = t.stack.toString())
+            : null != t.message
+              ? (s.messageText = t.message.length ? t.message : "UNKNOWN ERROR")
+              : (s.messageText = t.toString())),
+          null == e ||
+            ((e) => e === TASK_CANCELED_MSG)(s.messageText) ||
+            e.push(s);
+      })(t, e);
+    }
+  },
+  removeUnusedStyleText = (e, t, r) => {
+    try {
+      const s = parseCss(r.innerHTML);
+      if ((t.push(...s.diagnostics), hasError(t))) return;
+      try {
+        r.innerHTML = ((e, t) => {
+          const r = t.usedSelectors || null,
+            s = {
+              usedSelectors: r || null,
+              hasUsedAttrs: !!r && r.attrs.size > 0,
+              hasUsedClassNames: !!r && r.classNames.size > 0,
+              hasUsedIds: !!r && r.ids.size > 0,
+              hasUsedTags: !!r && r.tags.size > 0,
+            },
+            n = e.rules;
+          if (!n) return "";
+          const o = n.length,
+            i = [];
+          for (let e = 0; e < o; e++)
+            i.push(serializeCssVisitNode(s, n[e], e, o));
+          return i.join("");
+        })(s.stylesheet, { usedSelectors: e });
+      } catch (e) {
+        t.push({
+          level: "warn",
+          type: "css",
+          header: "CSS Stringify",
+          messageText: e,
+          lines: [],
+        });
+      }
+    } catch (e) {
+      t.push({
+        level: "warn",
+        type: "css",
+        header: "CSS Parse",
+        messageText: e,
+        lines: [],
+      });
+    }
+  },
+  SKIP_ATTRS = new Set(["s-id", "c-id"]),
+  createHydrateBuildId = () => {
+    let e = "abcdefghijklmnopqrstuvwxyz",
+      t = "";
+    for (; t.length < 8; )
+      (t += e[Math.floor(Math.random() * e.length)]),
+        1 === t.length && (e += "0123456789");
+    return t;
+  };
 export {
   createWindowFromHtml,
   hydrateDocument,

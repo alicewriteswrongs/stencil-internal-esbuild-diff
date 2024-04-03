@@ -1,7 +1,7 @@
 {
-  "name": "@stencil/core/internal/app-data",
+  "name": "@stencil/core/mock-doc",
   "version": "4.14.0-dev.1712179966.c1a9f20",
-  "description": "Used for default app data and build conditionals within builds.",
+  "description": "Mock window, document and DOM outside of a browser environment.",
   "main": "./index.cjs",
   "module": "./index.js",
   "types": "./index.d.ts",

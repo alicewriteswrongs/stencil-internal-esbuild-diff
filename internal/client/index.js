@@ -1,94 +1,31 @@
-var __defProp = Object.defineProperty;
-var __glob = (map2) => (path) => {
-  var fn = map2[path];
-  if (fn) return fn();
-  throw new Error("Module not found in bundle: " + path);
-};
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-import { BUILD } from "@stencil/core/internal/app-data";
-var Build = {
+let scopeId;
+let contentRef;
+let hostTagName;
+let customError;
+let i = 0;
+let useNativeShadowDom = false;
+let checkSlotFallbackVisibility = false;
+let checkSlotRelocate = false;
+let isSvgMode = false;
+let renderingRef = null;
+let queueCongestion = 0;
+let queuePending = false;
+import { BUILD, NAMESPACE } from "@stencil/core/internal/app-data";
+const Build = {
   isDev: BUILD.isDev ? true : false,
   isBrowser: true,
   isServer: false,
   isTesting: BUILD.isTesting ? true : false,
 };
-import { BUILD as BUILD22 } from "@stencil/core/internal/app-data";
-var getAssetPath = (path) => {
+const getAssetPath = (path) => {
   const assetUrl = new URL(path, plt.$resourcesUrl$);
   return assetUrl.origin !== win.location.origin
     ? assetUrl.href
     : assetUrl.pathname;
 };
-var setAssetPath = (path) => (plt.$resourcesUrl$ = path);
-import { BUILD as BUILD19 } from "@stencil/core/internal/app-data";
-var EMPTY_OBJ = {};
-var SVG_NS = "http://www.w3.org/2000/svg";
-var HTML_NS = "http://www.w3.org/1999/xhtml";
-var isDef = (v) => v != null;
-var isComplexType = (o) => {
-  o = typeof o;
-  return o === "object" || o === "function";
-};
-function queryNonceMetaTagContent(doc2) {
-  var _a, _b, _c;
-  return (_c =
-    (_b =
-      (_a = doc2.head) == null
-        ? void 0
-        : _a.querySelector('meta[name="csp-nonce"]')) == null
-      ? void 0
-      : _b.getAttribute("content")) != null
-    ? _c
-    : void 0;
-}
-var result_exports = {};
-__export(result_exports, {
-  err: () => err,
-  map: () => map,
-  ok: () => ok,
-  unwrap: () => unwrap,
-  unwrapErr: () => unwrapErr,
-});
-var ok = (value) => ({ isOk: true, isErr: false, value: value });
-var err = (value) => ({ isOk: false, isErr: true, value: value });
-function map(result, fn) {
-  if (result.isOk) {
-    const val = fn(result.value);
-    if (val instanceof Promise) {
-      return val.then((newVal) => ok(newVal));
-    } else {
-      return ok(val);
-    }
-  }
-  if (result.isErr) {
-    const value = result.value;
-    return err(value);
-  }
-  throw "should never get here";
-}
-var unwrap = (result) => {
-  if (result.isOk) {
-    return result.value;
-  } else {
-    throw result.value;
-  }
-};
-var unwrapErr = (result) => {
-  if (result.isErr) {
-    return result.value;
-  } else {
-    throw result.value;
-  }
-};
-import { BUILD as BUILD16 } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD4 } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD2 } from "@stencil/core/internal/app-data";
-var i = 0;
-var createTime = (fnName, tagName = "") => {
-  if (BUILD2.profile && performance.mark) {
+const setAssetPath = (path) => (plt.$resourcesUrl$ = path);
+const createTime = (fnName, tagName = "") => {
+  if (BUILD.profile && performance.mark) {
     const key = `st:${fnName}:${tagName}:${i++}`;
     performance.mark(key);
     return () => performance.measure(`[Stencil] ${fnName}() <${tagName}>`, key);
@@ -96,8 +33,8 @@ var createTime = (fnName, tagName = "") => {
     return () => {};
   }
 };
-var uniqueTime = (key, measureText) => {
-  if (BUILD2.profile && performance.mark) {
+const uniqueTime = (key, measureText) => {
+  if (BUILD.profile && performance.mark) {
     if (performance.getEntriesByName(key, "mark").length === 0) {
       performance.mark(key);
     }
@@ -110,10 +47,10 @@ var uniqueTime = (key, measureText) => {
     return () => {};
   }
 };
-var inspect = (ref) => {
+const inspect = (ref) => {
   const hostRef = getHostRef(ref);
   if (!hostRef) {
-    return void 0;
+    return undefined;
   }
   const flags = hostRef.$flags$;
   const hostElement = hostRef.$hostElement$;
@@ -152,8 +89,8 @@ var inspect = (ref) => {
     ["s-sc"]: hostElement["s-sc"],
   };
 };
-var installDevTools = () => {
-  if (BUILD2.devTools) {
+const installDevTools = () => {
+  if (BUILD.devTools) {
     const stencil = (win.stencil = win.stencil || {});
     const originalInspect = stencil.inspect;
     stencil.inspect = (ref) => {
@@ -165,24 +102,43 @@ var installDevTools = () => {
     };
   }
 };
-var CONTENT_REF_ID = "r";
-var ORG_LOCATION_ID = "o";
-var SLOT_NODE_ID = "s";
-var TEXT_NODE_ID = "t";
-var HYDRATE_ID = "s-id";
-var HYDRATED_STYLE_ID = "sty-id";
-var HYDRATE_CHILD_ID = "c-id";
-var HYDRATED_CSS = "{visibility:hidden}.hydrated{visibility:inherit}";
-var SLOT_FB_CSS = "slot-fb{display:contents}slot-fb[hidden]{display:none}";
-var XLINK_NS = "http://www.w3.org/1999/xlink";
-var FORM_ASSOCIATED_CUSTOM_ELEMENT_CALLBACKS = [
+const CONTENT_REF_ID = "r";
+const ORG_LOCATION_ID = "o";
+const SLOT_NODE_ID = "s";
+const TEXT_NODE_ID = "t";
+const HYDRATE_ID = "s-id";
+const HYDRATED_STYLE_ID = "sty-id";
+const HYDRATE_CHILD_ID = "c-id";
+const HYDRATED_CSS = "{visibility:hidden}.hydrated{visibility:inherit}";
+const SLOT_FB_CSS = "slot-fb{display:contents}slot-fb[hidden]{display:none}";
+const XLINK_NS = "http://www.w3.org/1999/xlink";
+const FORM_ASSOCIATED_CUSTOM_ELEMENT_CALLBACKS = [
   "formAssociatedCallback",
   "formResetCallback",
   "formDisabledCallback",
   "formStateRestoreCallback",
 ];
-import { BUILD as BUILD3 } from "@stencil/core/internal/app-data";
-var h = (nodeName, vnodeData, ...children) => {
+const EMPTY_OBJ = {};
+const SVG_NS = "http://www.w3.org/2000/svg";
+const HTML_NS = "http://www.w3.org/1999/xhtml";
+const isDef = (v) => v != null;
+const isComplexType = (o) => {
+  o = typeof o;
+  return o === "object" || o === "function";
+};
+function queryNonceMetaTagContent(doc) {
+  var _a, _b, _c;
+  return (_c =
+    (_b =
+      (_a = doc.head) === null || _a === void 0
+        ? void 0
+        : _a.querySelector('meta[name="csp-nonce"]')) === null || _b === void 0
+      ? void 0
+      : _b.getAttribute("content")) !== null && _c !== void 0
+    ? _c
+    : undefined;
+}
+const h = (nodeName, vnodeData, ...children) => {
   let child = null;
   let key = null;
   let slotName = null;
@@ -190,8 +146,8 @@ var h = (nodeName, vnodeData, ...children) => {
   let lastSimple = false;
   const vNodeChildren = [];
   const walk = (c) => {
-    for (let i2 = 0; i2 < c.length; i2++) {
-      child = c[i2];
+    for (let i = 0; i < c.length; i++) {
+      child = c[i];
       if (Array.isArray(child)) {
         walk(child);
       } else if (child != null && typeof child !== "boolean") {
@@ -200,9 +156,9 @@ var h = (nodeName, vnodeData, ...children) => {
         ) {
           child = String(child);
         } else if (
-          BUILD3.isDev &&
+          BUILD.isDev &&
           typeof nodeName !== "function" &&
-          child.$flags$ === void 0
+          child.$flags$ === undefined
         ) {
           consoleDevError(
             `vNode passed as children has unexpected type.\nMake sure it's using the correct h() function.\nEmpty objects can also be the cause, look for JSX comments that became objects.`,
@@ -219,16 +175,16 @@ var h = (nodeName, vnodeData, ...children) => {
   };
   walk(children);
   if (vnodeData) {
-    if (BUILD3.isDev && nodeName === "input") {
+    if (BUILD.isDev && nodeName === "input") {
       validateInputProperties(vnodeData);
     }
-    if (BUILD3.vdomKey && vnodeData.key) {
+    if (BUILD.vdomKey && vnodeData.key) {
       key = vnodeData.key;
     }
-    if (BUILD3.slotRelocation && vnodeData.name) {
+    if (BUILD.slotRelocation && vnodeData.name) {
       slotName = vnodeData.name;
     }
-    if (BUILD3.vdomClass) {
+    if (BUILD.vdomClass) {
       const classData = vnodeData.className || vnodeData.class;
       if (classData) {
         vnodeData.class =
@@ -240,12 +196,12 @@ var h = (nodeName, vnodeData, ...children) => {
       }
     }
   }
-  if (BUILD3.isDev && vNodeChildren.some(isHost)) {
+  if (BUILD.isDev && vNodeChildren.some(isHost)) {
     consoleDevError(
       `The <Host> must be the single root component. Make sure:\n- You are NOT using hostData() and <Host> in the same component.\n- <Host> is used once, and it's the single root component of the render() function.`,
     );
   }
-  if (BUILD3.vdomFunctional && typeof nodeName === "function") {
+  if (BUILD.vdomFunctional && typeof nodeName === "function") {
     return nodeName(
       vnodeData === null ? {} : vnodeData,
       vNodeChildren,
@@ -257,15 +213,15 @@ var h = (nodeName, vnodeData, ...children) => {
   if (vNodeChildren.length > 0) {
     vnode.$children$ = vNodeChildren;
   }
-  if (BUILD3.vdomKey) {
+  if (BUILD.vdomKey) {
     vnode.$key$ = key;
   }
-  if (BUILD3.slotRelocation) {
+  if (BUILD.slotRelocation) {
     vnode.$name$ = slotName;
   }
   return vnode;
 };
-var newVNode = (tag, text) => {
+const newVNode = (tag, text) => {
   const vnode = {
     $flags$: 0,
     $tag$: tag,
@@ -273,25 +229,25 @@ var newVNode = (tag, text) => {
     $elm$: null,
     $children$: null,
   };
-  if (BUILD3.vdomAttribute) {
+  if (BUILD.vdomAttribute) {
     vnode.$attrs$ = null;
   }
-  if (BUILD3.vdomKey) {
+  if (BUILD.vdomKey) {
     vnode.$key$ = null;
   }
-  if (BUILD3.slotRelocation) {
+  if (BUILD.slotRelocation) {
     vnode.$name$ = null;
   }
   return vnode;
 };
-var Host = {};
-var isHost = (node) => node && node.$tag$ === Host;
-var vdomFnUtils = {
+const Host = {};
+const isHost = (node) => node && node.$tag$ === Host;
+const vdomFnUtils = {
   forEach: (children, cb) => children.map(convertToPublic).forEach(cb),
   map: (children, cb) =>
     children.map(convertToPublic).map(cb).map(convertToPrivate),
 };
-var convertToPublic = (node) => ({
+const convertToPublic = (node) => ({
   vattrs: node.$attrs$,
   vchildren: node.$children$,
   vkey: node.$key$,
@@ -299,9 +255,9 @@ var convertToPublic = (node) => ({
   vtag: node.$tag$,
   vtext: node.$text$,
 });
-var convertToPrivate = (node) => {
+const convertToPrivate = (node) => {
   if (typeof node.vtag === "function") {
-    const vnodeData = { ...node.vattrs };
+    const vnodeData = Object.assign({}, node.vattrs);
     if (node.vkey) {
       vnodeData.key = node.vkey;
     }
@@ -317,7 +273,7 @@ var convertToPrivate = (node) => {
   vnode.$name$ = node.vname;
   return vnode;
 };
-var validateInputProperties = (inputElm) => {
+const validateInputProperties = (inputElm) => {
   const props = Object.keys(inputElm);
   const value = props.indexOf("value");
   if (value === -1) {
@@ -338,12 +294,12 @@ var validateInputProperties = (inputElm) => {
     );
   }
 };
-var initializeClientHydrate = (hostElm, tagName, hostId, hostRef) => {
+const initializeClientHydrate = (hostElm, tagName, hostId, hostRef) => {
   const endHydrate = createTime("hydrateClient", tagName);
   const shadowRoot = hostElm.shadowRoot;
   const childRenderNodes = [];
   const slotNodes = [];
-  const shadowRootNodes = BUILD4.shadowDom && shadowRoot ? [] : null;
+  const shadowRootNodes = BUILD.shadowDom && shadowRoot ? [] : null;
   const vnode = (hostRef.$vnode$ = newVNode(tagName, null));
   if (!plt.$orgLocNodes$) {
     initializeDocumentHydrate(doc.body, (plt.$orgLocNodes$ = new Map()));
@@ -378,7 +334,7 @@ var initializeClientHydrate = (hostElm, tagName, hostId, hostRef) => {
     }
     plt.$orgLocNodes$.delete(orgLocationId);
   });
-  if (BUILD4.shadowDom && shadowRoot) {
+  if (BUILD.shadowDom && shadowRoot) {
     shadowRootNodes.map((shadowRootNode) => {
       if (shadowRootNode) {
         shadowRoot.appendChild(shadowRootNode);
@@ -387,7 +343,7 @@ var initializeClientHydrate = (hostElm, tagName, hostId, hostRef) => {
   }
   endHydrate();
 };
-var clientHydrate = (
+const clientHydrate = (
   parentVNode,
   childRenderNodes,
   slotNodes,
@@ -399,7 +355,7 @@ var clientHydrate = (
   let childNodeType;
   let childIdSplt;
   let childVNode;
-  let i2;
+  let i;
   if (node.nodeType === 1) {
     childNodeType = node.getAttribute(HYDRATE_CHILD_ID);
     if (childNodeType) {
@@ -431,26 +387,26 @@ var clientHydrate = (
         }
       }
     }
-    for (i2 = node.childNodes.length - 1; i2 >= 0; i2--) {
+    for (i = node.childNodes.length - 1; i >= 0; i--) {
       clientHydrate(
         parentVNode,
         childRenderNodes,
         slotNodes,
         shadowRootNodes,
         hostElm,
-        node.childNodes[i2],
+        node.childNodes[i],
         hostId,
       );
     }
     if (node.shadowRoot) {
-      for (i2 = node.shadowRoot.childNodes.length - 1; i2 >= 0; i2--) {
+      for (i = node.shadowRoot.childNodes.length - 1; i >= 0; i--) {
         clientHydrate(
           parentVNode,
           childRenderNodes,
           slotNodes,
           shadowRootNodes,
           hostElm,
-          node.shadowRoot.childNodes[i2],
+          node.shadowRoot.childNodes[i],
           hostId,
         );
       }
@@ -496,7 +452,7 @@ var clientHydrate = (
             node["s-sn"] = "";
           }
           node["s-sr"] = true;
-          if (BUILD4.shadowDom && shadowRootNodes) {
+          if (BUILD.shadowDom && shadowRootNodes) {
             childVNode.$elm$ = doc.createElement(childVNode.$tag$);
             if (childVNode.$name$) {
               childVNode.$elm$.setAttribute("name", childVNode.$name$);
@@ -513,9 +469,9 @@ var clientHydrate = (
           }
           parentVNode.$children$[childVNode.$index$] = childVNode;
         } else if (childNodeType === CONTENT_REF_ID) {
-          if (BUILD4.shadowDom && shadowRootNodes) {
+          if (BUILD.shadowDom && shadowRootNodes) {
             node.remove();
-          } else if (BUILD4.slotRelocation) {
+          } else if (BUILD.slotRelocation) {
             hostElm["s-cr"] = node;
             node["s-cn"] = true;
           }
@@ -529,15 +485,15 @@ var clientHydrate = (
     parentVNode.$children$ = [vnode];
   }
 };
-var initializeDocumentHydrate = (node, orgLocNodes) => {
+const initializeDocumentHydrate = (node, orgLocNodes) => {
   if (node.nodeType === 1) {
-    let i2 = 0;
-    for (; i2 < node.childNodes.length; i2++) {
-      initializeDocumentHydrate(node.childNodes[i2], orgLocNodes);
+    let i = 0;
+    for (; i < node.childNodes.length; i++) {
+      initializeDocumentHydrate(node.childNodes[i], orgLocNodes);
     }
     if (node.shadowRoot) {
-      for (i2 = 0; i2 < node.shadowRoot.childNodes.length; i2++) {
-        initializeDocumentHydrate(node.shadowRoot.childNodes[i2], orgLocNodes);
+      for (i = 0; i < node.shadowRoot.childNodes.length; i++) {
+        initializeDocumentHydrate(node.shadowRoot.childNodes[i], orgLocNodes);
       }
     }
   } else if (node.nodeType === 8) {
@@ -549,39 +505,32 @@ var initializeDocumentHydrate = (node, orgLocNodes) => {
     }
   }
 };
-import { BUILD as BUILD15 } from "@stencil/core/internal/app-data";
-var computeMode = (elm) =>
-  modeResolutionChain.map((h2) => h2(elm)).find((m) => !!m);
-var setMode = (handler) => modeResolutionChain.push(handler);
-var getMode = (ref) => getHostRef(ref).$modeName$;
-import { BUILD as BUILD14 } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD13 } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD5 } from "@stencil/core/internal/app-data";
-var parsePropertyValue = (propValue, propType) => {
+const computeMode = (elm) =>
+  modeResolutionChain.map((h) => h(elm)).find((m) => !!m);
+const setMode = (handler) => modeResolutionChain.push(handler);
+const getMode = (ref) => getHostRef(ref).$modeName$;
+const parsePropertyValue = (propValue, propType) => {
   if (propValue != null && !isComplexType(propValue)) {
-    if (BUILD5.propBoolean && propType & 4) {
+    if (BUILD.propBoolean && propType & 4) {
       return propValue === "false" ? false : propValue === "" || !!propValue;
     }
-    if (BUILD5.propNumber && propType & 2) {
+    if (BUILD.propNumber && propType & 2) {
       return parseFloat(propValue);
     }
-    if (BUILD5.propString && propType & 1) {
+    if (BUILD.propString && propType & 1) {
       return String(propValue);
     }
     return propValue;
   }
   return propValue;
 };
-import { BUILD as BUILD12, NAMESPACE } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD7 } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD6 } from "@stencil/core/internal/app-data";
-var getElement = (ref) =>
-  BUILD6.lazyLoad ? getHostRef(ref).$hostElement$ : ref;
-var createEvent = (ref, name, flags) => {
+const getElement = (ref) =>
+  BUILD.lazyLoad ? getHostRef(ref).$hostElement$ : ref;
+const createEvent = (ref, name, flags) => {
   const elm = getElement(ref);
   return {
     emit: (detail) => {
-      if (BUILD7.isDev && !elm.isConnected) {
+      if (BUILD.isDev && !elm.isConnected) {
         consoleDevWarn(
           `The "${name}" event was emitted, but the dispatcher node is no longer connected to the dom.`,
         );
@@ -595,15 +544,14 @@ var createEvent = (ref, name, flags) => {
     },
   };
 };
-var emitEvent = (elm, name, opts) => {
+const emitEvent = (elm, name, opts) => {
   const ev = plt.ce(name, opts);
   elm.dispatchEvent(ev);
   return ev;
 };
-import { BUILD as BUILD8 } from "@stencil/core/internal/app-data";
-var rootAppliedStyles = new WeakMap();
-var registerStyle = (scopeId2, cssText, allowCS) => {
-  let style = styles.get(scopeId2);
+const rootAppliedStyles = new WeakMap();
+const registerStyle = (scopeId, cssText, allowCS) => {
+  let style = styles.get(scopeId);
   if (supportsConstructableStylesheets && allowCS) {
     style = style || new CSSStyleSheet();
     if (typeof style === "string") {
@@ -614,14 +562,14 @@ var registerStyle = (scopeId2, cssText, allowCS) => {
   } else {
     style = cssText;
   }
-  styles.set(scopeId2, style);
+  styles.set(scopeId, style);
 };
-var addStyle = (styleContainerNode, cmpMeta, mode) => {
+const addStyle = (styleContainerNode, cmpMeta, mode) => {
   var _a;
-  const scopeId2 = getScopeId(cmpMeta, mode);
-  const style = styles.get(scopeId2);
-  if (!BUILD8.attachStyles) {
-    return scopeId2;
+  const scopeId = getScopeId(cmpMeta, mode);
+  const style = styles.get(scopeId);
+  if (!BUILD.attachStyles) {
+    return scopeId;
   }
   styleContainerNode =
     styleContainerNode.nodeType === 11 ? styleContainerNode : doc;
@@ -633,12 +581,12 @@ var addStyle = (styleContainerNode, cmpMeta, mode) => {
       if (!appliedStyles) {
         rootAppliedStyles.set(styleContainerNode, (appliedStyles = new Set()));
       }
-      if (!appliedStyles.has(scopeId2)) {
+      if (!appliedStyles.has(scopeId)) {
         if (
-          BUILD8.hydrateClientSide &&
+          BUILD.hydrateClientSide &&
           styleContainerNode.host &&
           (styleElm = styleContainerNode.querySelector(
-            `[${HYDRATED_STYLE_ID}="${scopeId2}"]`,
+            `[${HYDRATED_STYLE_ID}="${scopeId}"]`,
           ))
         ) {
           styleElm.innerHTML = style;
@@ -646,12 +594,14 @@ var addStyle = (styleContainerNode, cmpMeta, mode) => {
           styleElm = doc.createElement("style");
           styleElm.innerHTML = style;
           const nonce =
-            (_a = plt.$nonce$) != null ? _a : queryNonceMetaTagContent(doc);
+            (_a = plt.$nonce$) !== null && _a !== void 0
+              ? _a
+              : queryNonceMetaTagContent(doc);
           if (nonce != null) {
             styleElm.setAttribute("nonce", nonce);
           }
-          if (BUILD8.hydrateServerSide || BUILD8.hotModuleReplacement) {
-            styleElm.setAttribute(HYDRATED_STYLE_ID, scopeId2);
+          if (BUILD.hydrateServerSide || BUILD.hotModuleReplacement) {
+            styleElm.setAttribute(HYDRATED_STYLE_ID, scopeId);
           }
           styleContainerNode.insertBefore(
             styleElm,
@@ -662,11 +612,11 @@ var addStyle = (styleContainerNode, cmpMeta, mode) => {
           styleElm.innerHTML += SLOT_FB_CSS;
         }
         if (appliedStyles) {
-          appliedStyles.add(scopeId2);
+          appliedStyles.add(scopeId);
         }
       }
     } else if (
-      BUILD8.constructableCSS &&
+      BUILD.constructableCSS &&
       !styleContainerNode.adoptedStyleSheets.includes(style)
     ) {
       styleContainerNode.adoptedStyleSheets = [
@@ -675,48 +625,41 @@ var addStyle = (styleContainerNode, cmpMeta, mode) => {
       ];
     }
   }
-  return scopeId2;
+  return scopeId;
 };
-var attachStyles = (hostRef) => {
+const attachStyles = (hostRef) => {
   const cmpMeta = hostRef.$cmpMeta$;
   const elm = hostRef.$hostElement$;
   const flags = cmpMeta.$flags$;
   const endAttachStyles = createTime("attachStyles", cmpMeta.$tagName$);
-  const scopeId2 = addStyle(
-    BUILD8.shadowDom && supportsShadow && elm.shadowRoot
+  const scopeId = addStyle(
+    BUILD.shadowDom && supportsShadow && elm.shadowRoot
       ? elm.shadowRoot
       : elm.getRootNode(),
     cmpMeta,
     hostRef.$modeName$,
   );
-  if (
-    (BUILD8.shadowDom || BUILD8.scoped) &&
-    BUILD8.cssAnnotations &&
-    flags & 10
-  ) {
-    elm["s-sc"] = scopeId2;
-    elm.classList.add(scopeId2 + "-h");
-    if (BUILD8.scoped && flags & 2) {
-      elm.classList.add(scopeId2 + "-s");
+  if ((BUILD.shadowDom || BUILD.scoped) && BUILD.cssAnnotations && flags & 10) {
+    elm["s-sc"] = scopeId;
+    elm.classList.add(scopeId + "-h");
+    if (BUILD.scoped && flags & 2) {
+      elm.classList.add(scopeId + "-s");
     }
   }
   endAttachStyles();
 };
-var getScopeId = (cmp, mode) =>
+const getScopeId = (cmp, mode) =>
   "sc-" +
-  (BUILD8.mode && mode && cmp.$flags$ & 32
+  (BUILD.mode && mode && cmp.$flags$ & 32
     ? cmp.$tagName$ + "-" + mode
     : cmp.$tagName$);
-var convertScopedToShadow = (css) =>
+const convertScopedToShadow = (css) =>
   css.replace(/\/\*!@([^\/]+)\*\/[^\{]+\{/g, "$1{");
-import { BUILD as BUILD11 } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD10 } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD9 } from "@stencil/core/internal/app-data";
-var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
+const setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
   if (oldValue !== newValue) {
     let isProp = isMemberInElement(elm, memberName);
     let ln = memberName.toLowerCase();
-    if (BUILD9.vdomClass && memberName === "class") {
+    if (BUILD.vdomClass && memberName === "class") {
       const classList = elm.classList;
       const oldClasses = parseClassList(oldValue);
       const newClasses = parseClassList(newValue);
@@ -724,11 +667,11 @@ var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
         ...oldClasses.filter((c) => c && !newClasses.includes(c)),
       );
       classList.add(...newClasses.filter((c) => c && !oldClasses.includes(c)));
-    } else if (BUILD9.vdomStyle && memberName === "style") {
-      if (BUILD9.updatable) {
+    } else if (BUILD.vdomStyle && memberName === "style") {
+      if (BUILD.updatable) {
         for (const prop in oldValue) {
           if (!newValue || newValue[prop] == null) {
-            if (!BUILD9.hydrateServerSide && prop.includes("-")) {
+            if (!BUILD.hydrateServerSide && prop.includes("-")) {
               elm.style.removeProperty(prop);
             } else {
               elm.style[prop] = "";
@@ -738,21 +681,21 @@ var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
       }
       for (const prop in newValue) {
         if (!oldValue || newValue[prop] !== oldValue[prop]) {
-          if (!BUILD9.hydrateServerSide && prop.includes("-")) {
+          if (!BUILD.hydrateServerSide && prop.includes("-")) {
             elm.style.setProperty(prop, newValue[prop]);
           } else {
             elm.style[prop] = newValue[prop];
           }
         }
       }
-    } else if (BUILD9.vdomKey && memberName === "key") {
-    } else if (BUILD9.vdomRef && memberName === "ref") {
+    } else if (BUILD.vdomKey && memberName === "key");
+    else if (BUILD.vdomRef && memberName === "ref") {
       if (newValue) {
         newValue(elm);
       }
     } else if (
-      BUILD9.vdomListener &&
-      (BUILD9.lazyLoad ? !isProp : !elm.__lookupSetter__(memberName)) &&
+      BUILD.vdomListener &&
+      (BUILD.lazyLoad ? !isProp : !elm.__lookupSetter__(memberName)) &&
       memberName[0] === "o" &&
       memberName[1] === "n"
     ) {
@@ -773,7 +716,7 @@ var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
           plt.ael(elm, memberName, newValue, capture);
         }
       }
-    } else if (BUILD9.vdomPropOrAttr) {
+    } else if (BUILD.vdomPropOrAttr) {
       const isComplex = isComplexType(newValue);
       if ((isProp || (isComplex && newValue !== null)) && !isSvg) {
         try {
@@ -790,7 +733,7 @@ var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
         } catch (e) {}
       }
       let xlink = false;
-      if (BUILD9.vdomXlink) {
+      if (BUILD.vdomXlink) {
         if (ln !== (ln = ln.replace(/^xlink\:?/, ""))) {
           memberName = ln;
           xlink = true;
@@ -798,7 +741,7 @@ var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
       }
       if (newValue == null || newValue === false) {
         if (newValue !== false || elm.getAttribute(memberName) === "") {
-          if (BUILD9.vdomXlink && xlink) {
+          if (BUILD.vdomXlink && xlink) {
             elm.removeAttributeNS(XLINK_NS, memberName);
           } else {
             elm.removeAttribute(memberName);
@@ -806,7 +749,7 @@ var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
         }
       } else if ((!isProp || flags & 4 || isSvg) && !isComplex) {
         newValue = newValue === true ? "" : newValue;
-        if (BUILD9.vdomXlink && xlink) {
+        if (BUILD.vdomXlink && xlink) {
           elm.setAttributeNS(XLINK_NS, memberName, newValue);
         } else {
           elm.setAttribute(memberName, newValue);
@@ -815,116 +758,115 @@ var setAccessor = (elm, memberName, oldValue, newValue, isSvg, flags) => {
     }
   }
 };
-var parseClassListRegex = /\s/;
-var parseClassList = (value) =>
+const parseClassListRegex = /\s/;
+const parseClassList = (value) =>
   !value ? [] : value.split(parseClassListRegex);
-var CAPTURE_EVENT_SUFFIX = "Capture";
-var CAPTURE_EVENT_REGEX = new RegExp(CAPTURE_EVENT_SUFFIX + "$");
-var updateElement = (oldVnode, newVnode, isSvgMode2, memberName) => {
+const CAPTURE_EVENT_SUFFIX = "Capture";
+const CAPTURE_EVENT_REGEX = new RegExp(CAPTURE_EVENT_SUFFIX + "$");
+const updateElement = (oldVnode, newVnode, isSvgMode, memberName) => {
   const elm =
     newVnode.$elm$.nodeType === 11 && newVnode.$elm$.host
       ? newVnode.$elm$.host
       : newVnode.$elm$;
   const oldVnodeAttrs = (oldVnode && oldVnode.$attrs$) || EMPTY_OBJ;
   const newVnodeAttrs = newVnode.$attrs$ || EMPTY_OBJ;
-  if (BUILD10.updatable) {
-    for (memberName in oldVnodeAttrs) {
+  if (BUILD.updatable) {
+    for (memberName of sortedAttrNames(Object.keys(oldVnodeAttrs))) {
       if (!(memberName in newVnodeAttrs)) {
         setAccessor(
           elm,
           memberName,
           oldVnodeAttrs[memberName],
-          void 0,
-          isSvgMode2,
+          undefined,
+          isSvgMode,
           newVnode.$flags$,
         );
       }
     }
   }
-  for (memberName in newVnodeAttrs) {
+  for (memberName of sortedAttrNames(Object.keys(newVnodeAttrs))) {
     setAccessor(
       elm,
       memberName,
       oldVnodeAttrs[memberName],
       newVnodeAttrs[memberName],
-      isSvgMode2,
+      isSvgMode,
       newVnode.$flags$,
     );
   }
 };
-var scopeId;
-var contentRef;
-var hostTagName;
-var useNativeShadowDom = false;
-var checkSlotFallbackVisibility = false;
-var checkSlotRelocate = false;
-var isSvgMode = false;
-var createElm = (oldParentVNode, newParentVNode, childIndex, parentElm) => {
-  const newVNode2 = newParentVNode.$children$[childIndex];
-  let i2 = 0;
+function sortedAttrNames(attrNames) {
+  return attrNames.includes("ref")
+    ? [...attrNames.filter((attr) => attr !== "ref"), "ref"]
+    : attrNames;
+}
+const createElm = (oldParentVNode, newParentVNode, childIndex, parentElm) => {
+  var _a;
+  const newVNode = newParentVNode.$children$[childIndex];
+  let i = 0;
   let elm;
   let childNode;
   let oldVNode;
-  if (BUILD11.slotRelocation && !useNativeShadowDom) {
+  if (BUILD.slotRelocation && !useNativeShadowDom) {
     checkSlotRelocate = true;
-    if (newVNode2.$tag$ === "slot") {
+    if (newVNode.$tag$ === "slot") {
       if (scopeId) {
         parentElm.classList.add(scopeId + "-s");
       }
-      newVNode2.$flags$ |= newVNode2.$children$ ? 2 : 1;
+      newVNode.$flags$ |= newVNode.$children$ ? 2 : 1;
     }
   }
-  if (BUILD11.isDev && newVNode2.$elm$) {
+  if (BUILD.isDev && newVNode.$elm$) {
     consoleDevError(
-      `The JSX ${newVNode2.$text$ !== null ? `"${newVNode2.$text$}" text` : `"${newVNode2.$tag$}" element`} node should not be shared within the same renderer. The renderer caches element lookups in order to improve performance. However, a side effect from this is that the exact same JSX node should not be reused. For more information please see https://stenciljs.com/docs/templating-jsx#avoid-shared-jsx-nodes`,
+      `The JSX ${newVNode.$text$ !== null ? `"${newVNode.$text$}" text` : `"${newVNode.$tag$}" element`} node should not be shared within the same renderer. The renderer caches element lookups in order to improve performance. However, a side effect from this is that the exact same JSX node should not be reused. For more information please see https://stenciljs.com/docs/templating-jsx#avoid-shared-jsx-nodes`,
     );
   }
-  if (BUILD11.vdomText && newVNode2.$text$ !== null) {
-    elm = newVNode2.$elm$ = doc.createTextNode(newVNode2.$text$);
-  } else if (BUILD11.slotRelocation && newVNode2.$flags$ & 1) {
-    elm = newVNode2.$elm$ =
-      BUILD11.isDebug || BUILD11.hydrateServerSide
-        ? slotReferenceDebugNode(newVNode2)
+  if (BUILD.vdomText && newVNode.$text$ !== null) {
+    elm = newVNode.$elm$ = doc.createTextNode(newVNode.$text$);
+  } else if (BUILD.slotRelocation && newVNode.$flags$ & 1) {
+    elm = newVNode.$elm$ =
+      BUILD.isDebug || BUILD.hydrateServerSide
+        ? slotReferenceDebugNode(newVNode)
         : doc.createTextNode("");
   } else {
-    if (BUILD11.svg && !isSvgMode) {
-      isSvgMode = newVNode2.$tag$ === "svg";
+    if (BUILD.svg && !isSvgMode) {
+      isSvgMode = newVNode.$tag$ === "svg";
     }
-    elm = newVNode2.$elm$ = BUILD11.svg
+    elm = newVNode.$elm$ = BUILD.svg
       ? doc.createElementNS(
           isSvgMode ? SVG_NS : HTML_NS,
-          BUILD11.slotRelocation && newVNode2.$flags$ & 2
+          BUILD.slotRelocation && newVNode.$flags$ & 2
             ? "slot-fb"
-            : newVNode2.$tag$,
+            : newVNode.$tag$,
         )
       : doc.createElement(
-          BUILD11.slotRelocation && newVNode2.$flags$ & 2
+          BUILD.slotRelocation && newVNode.$flags$ & 2
             ? "slot-fb"
-            : newVNode2.$tag$,
+            : newVNode.$tag$,
         );
-    if (BUILD11.svg && isSvgMode && newVNode2.$tag$ === "foreignObject") {
+    if (BUILD.svg && isSvgMode && newVNode.$tag$ === "foreignObject") {
       isSvgMode = false;
     }
-    if (BUILD11.vdomAttribute) {
-      updateElement(null, newVNode2, isSvgMode);
+    if (BUILD.vdomAttribute) {
+      updateElement(null, newVNode, isSvgMode);
     }
     if (
-      (BUILD11.shadowDom || BUILD11.scoped) &&
+      (BUILD.shadowDom || BUILD.scoped) &&
       isDef(scopeId) &&
       elm["s-si"] !== scopeId
     ) {
       elm.classList.add((elm["s-si"] = scopeId));
     }
-    if (newVNode2.$children$) {
-      for (i2 = 0; i2 < newVNode2.$children$.length; ++i2) {
-        childNode = createElm(oldParentVNode, newVNode2, i2, elm);
+    if (newVNode.$children$) {
+      for (i = 0; i < newVNode.$children$.length; ++i) {
+        childNode = createElm(oldParentVNode, newVNode, i, elm);
         if (childNode) {
           elm.appendChild(childNode);
         }
       }
     }
-    if (BUILD11.svg) {
-      if (newVNode2.$tag$ === "svg") {
+    if (BUILD.svg) {
+      if (newVNode.$tag$ === "svg") {
         isSvgMode = false;
       } else if (elm.tagName === "foreignObject") {
         isSvgMode = true;
@@ -932,21 +874,23 @@ var createElm = (oldParentVNode, newParentVNode, childIndex, parentElm) => {
     }
   }
   elm["s-hn"] = hostTagName;
-  if (BUILD11.slotRelocation) {
-    if (newVNode2.$flags$ & (2 | 1)) {
+  if (BUILD.slotRelocation) {
+    if (newVNode.$flags$ & (2 | 1)) {
       elm["s-sr"] = true;
       elm["s-cr"] = contentRef;
-      elm["s-sn"] = newVNode2.$name$ || "";
+      elm["s-sn"] = newVNode.$name$ || "";
+      elm["s-rf"] =
+        (_a = newVNode.$attrs$) === null || _a === void 0 ? void 0 : _a.ref;
       oldVNode =
         oldParentVNode &&
         oldParentVNode.$children$ &&
         oldParentVNode.$children$[childIndex];
       if (
         oldVNode &&
-        oldVNode.$tag$ === newVNode2.$tag$ &&
+        oldVNode.$tag$ === newVNode.$tag$ &&
         oldParentVNode.$elm$
       ) {
-        if (BUILD11.experimentalSlotFixes) {
+        if (BUILD.experimentalSlotFixes) {
           relocateToHostRoot(oldParentVNode.$elm$);
         } else {
           putBackInOriginalLocation(oldParentVNode.$elm$, false);
@@ -956,7 +900,7 @@ var createElm = (oldParentVNode, newParentVNode, childIndex, parentElm) => {
   }
   return elm;
 };
-var relocateToHostRoot = (parentElm) => {
+const relocateToHostRoot = (parentElm) => {
   plt.$flags$ |= 1;
   const host = parentElm.closest(hostTagName.toLowerCase());
   if (host != null) {
@@ -970,28 +914,42 @@ var relocateToHostRoot = (parentElm) => {
       if (childNode["s-sh"] != null) {
         host.insertBefore(
           childNode,
-          contentRefNode != null ? contentRefNode : null,
+          contentRefNode !== null && contentRefNode !== void 0
+            ? contentRefNode
+            : null,
         );
-        childNode["s-sh"] = void 0;
+        childNode["s-sh"] = undefined;
         checkSlotRelocate = true;
       }
     }
   }
   plt.$flags$ &= ~1;
 };
-var putBackInOriginalLocation = (parentElm, recursive) => {
+const putBackInOriginalLocation = (parentElm, recursive) => {
   plt.$flags$ |= 1;
-  const oldSlotChildNodes = parentElm.childNodes;
-  for (let i2 = oldSlotChildNodes.length - 1; i2 >= 0; i2--) {
-    const childNode = oldSlotChildNodes[i2];
+  const oldSlotChildNodes = Array.from(parentElm.childNodes);
+  if (parentElm["s-sr"] && BUILD.experimentalSlotFixes) {
+    let node = parentElm;
+    while ((node = node.nextSibling)) {
+      if (
+        node &&
+        node["s-sn"] === parentElm["s-sn"] &&
+        node["s-sh"] === hostTagName
+      ) {
+        oldSlotChildNodes.push(node);
+      }
+    }
+  }
+  for (let i = oldSlotChildNodes.length - 1; i >= 0; i--) {
+    const childNode = oldSlotChildNodes[i];
     if (childNode["s-hn"] !== hostTagName && childNode["s-ol"]) {
       parentReferenceNode(childNode).insertBefore(
         childNode,
         referenceNode(childNode),
       );
       childNode["s-ol"].remove();
-      childNode["s-ol"] = void 0;
-      childNode["s-sh"] = void 0;
+      childNode["s-ol"] = undefined;
+      childNode["s-sh"] = undefined;
       checkSlotRelocate = true;
     }
     if (recursive) {
@@ -1000,15 +958,22 @@ var putBackInOriginalLocation = (parentElm, recursive) => {
   }
   plt.$flags$ &= ~1;
 };
-var addVnodes = (parentElm, before, parentVNode, vnodes, startIdx, endIdx) => {
+const addVnodes = (
+  parentElm,
+  before,
+  parentVNode,
+  vnodes,
+  startIdx,
+  endIdx,
+) => {
   let containerElm =
-    (BUILD11.slotRelocation &&
+    (BUILD.slotRelocation &&
       parentElm["s-cr"] &&
       parentElm["s-cr"].parentNode) ||
     parentElm;
   let childNode;
   if (
-    BUILD11.shadowDom &&
+    BUILD.shadowDom &&
     containerElm.shadowRoot &&
     containerElm.tagName === hostTagName
   ) {
@@ -1021,20 +986,20 @@ var addVnodes = (parentElm, before, parentVNode, vnodes, startIdx, endIdx) => {
         vnodes[startIdx].$elm$ = childNode;
         containerElm.insertBefore(
           childNode,
-          BUILD11.slotRelocation ? referenceNode(before) : before,
+          BUILD.slotRelocation ? referenceNode(before) : before,
         );
       }
     }
   }
 };
-var removeVnodes = (vnodes, startIdx, endIdx) => {
+const removeVnodes = (vnodes, startIdx, endIdx) => {
   for (let index = startIdx; index <= endIdx; ++index) {
     const vnode = vnodes[index];
     if (vnode) {
       const elm = vnode.$elm$;
       nullifyVNodeRefs(vnode);
       if (elm) {
-        if (BUILD11.slotRelocation) {
+        if (BUILD.slotRelocation) {
           checkSlotFallbackVisibility = true;
           if (elm["s-ol"]) {
             elm["s-ol"].remove();
@@ -1047,17 +1012,17 @@ var removeVnodes = (vnodes, startIdx, endIdx) => {
     }
   }
 };
-var updateChildren = (
+const updateChildren = (
   parentElm,
   oldCh,
-  newVNode2,
+  newVNode,
   newCh,
   isInitialRender = false,
 ) => {
   let oldStartIdx = 0;
   let newStartIdx = 0;
   let idxInOld = 0;
-  let i2 = 0;
+  let i = 0;
   let oldEndIdx = oldCh.length - 1;
   let oldStartVnode = oldCh[0];
   let oldEndVnode = oldCh[oldEndIdx];
@@ -1085,7 +1050,7 @@ var updateChildren = (
       newEndVnode = newCh[--newEndIdx];
     } else if (isSameVnode(oldStartVnode, newEndVnode, isInitialRender)) {
       if (
-        BUILD11.slotRelocation &&
+        BUILD.slotRelocation &&
         (oldStartVnode.$tag$ === "slot" || newEndVnode.$tag$ === "slot")
       ) {
         putBackInOriginalLocation(oldStartVnode.$elm$.parentNode, false);
@@ -1099,7 +1064,7 @@ var updateChildren = (
       newEndVnode = newCh[--newEndIdx];
     } else if (isSameVnode(oldEndVnode, newStartVnode, isInitialRender)) {
       if (
-        BUILD11.slotRelocation &&
+        BUILD.slotRelocation &&
         (oldStartVnode.$tag$ === "slot" || newEndVnode.$tag$ === "slot")
       ) {
         putBackInOriginalLocation(oldEndVnode.$elm$.parentNode, false);
@@ -1110,44 +1075,44 @@ var updateChildren = (
       newStartVnode = newCh[++newStartIdx];
     } else {
       idxInOld = -1;
-      if (BUILD11.vdomKey) {
-        for (i2 = oldStartIdx; i2 <= oldEndIdx; ++i2) {
+      if (BUILD.vdomKey) {
+        for (i = oldStartIdx; i <= oldEndIdx; ++i) {
           if (
-            oldCh[i2] &&
-            oldCh[i2].$key$ !== null &&
-            oldCh[i2].$key$ === newStartVnode.$key$
+            oldCh[i] &&
+            oldCh[i].$key$ !== null &&
+            oldCh[i].$key$ === newStartVnode.$key$
           ) {
-            idxInOld = i2;
+            idxInOld = i;
             break;
           }
         }
       }
-      if (BUILD11.vdomKey && idxInOld >= 0) {
+      if (BUILD.vdomKey && idxInOld >= 0) {
         elmToMove = oldCh[idxInOld];
         if (elmToMove.$tag$ !== newStartVnode.$tag$) {
           node = createElm(
             oldCh && oldCh[newStartIdx],
-            newVNode2,
+            newVNode,
             idxInOld,
             parentElm,
           );
         } else {
           patch(elmToMove, newStartVnode, isInitialRender);
-          oldCh[idxInOld] = void 0;
+          oldCh[idxInOld] = undefined;
           node = elmToMove.$elm$;
         }
         newStartVnode = newCh[++newStartIdx];
       } else {
         node = createElm(
           oldCh && oldCh[newStartIdx],
-          newVNode2,
+          newVNode,
           newStartIdx,
           parentElm,
         );
         newStartVnode = newCh[++newStartIdx];
       }
       if (node) {
-        if (BUILD11.slotRelocation) {
+        if (BUILD.slotRelocation) {
           parentReferenceNode(oldStartVnode.$elm$).insertBefore(
             node,
             referenceNode(oldStartVnode.$elm$),
@@ -1165,79 +1130,79 @@ var updateChildren = (
     addVnodes(
       parentElm,
       newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].$elm$,
-      newVNode2,
+      newVNode,
       newCh,
       newStartIdx,
       newEndIdx,
     );
-  } else if (BUILD11.updatable && newStartIdx > newEndIdx) {
+  } else if (BUILD.updatable && newStartIdx > newEndIdx) {
     removeVnodes(oldCh, oldStartIdx, oldEndIdx);
   }
 };
-var isSameVnode = (leftVNode, rightVNode, isInitialRender = false) => {
+const isSameVnode = (leftVNode, rightVNode, isInitialRender = false) => {
   if (leftVNode.$tag$ === rightVNode.$tag$) {
-    if (BUILD11.slotRelocation && leftVNode.$tag$ === "slot") {
+    if (BUILD.slotRelocation && leftVNode.$tag$ === "slot") {
       return leftVNode.$name$ === rightVNode.$name$;
     }
-    if (BUILD11.vdomKey && !isInitialRender) {
+    if (BUILD.vdomKey && !isInitialRender) {
       return leftVNode.$key$ === rightVNode.$key$;
     }
     return true;
   }
   return false;
 };
-var referenceNode = (node) => (node && node["s-ol"]) || node;
-var parentReferenceNode = (node) =>
+const referenceNode = (node) => (node && node["s-ol"]) || node;
+const parentReferenceNode = (node) =>
   (node["s-ol"] ? node["s-ol"] : node).parentNode;
-var patch = (oldVNode, newVNode2, isInitialRender = false) => {
-  const elm = (newVNode2.$elm$ = oldVNode.$elm$);
+const patch = (oldVNode, newVNode, isInitialRender = false) => {
+  const elm = (newVNode.$elm$ = oldVNode.$elm$);
   const oldChildren = oldVNode.$children$;
-  const newChildren = newVNode2.$children$;
-  const tag = newVNode2.$tag$;
-  const text = newVNode2.$text$;
+  const newChildren = newVNode.$children$;
+  const tag = newVNode.$tag$;
+  const text = newVNode.$text$;
   let defaultHolder;
-  if (!BUILD11.vdomText || text === null) {
-    if (BUILD11.svg) {
+  if (!BUILD.vdomText || text === null) {
+    if (BUILD.svg) {
       isSvgMode =
         tag === "svg" ? true : tag === "foreignObject" ? false : isSvgMode;
     }
-    if (BUILD11.vdomAttribute || BUILD11.reflect) {
-      if (BUILD11.slot && tag === "slot" && !useNativeShadowDom) {
+    if (BUILD.vdomAttribute || BUILD.reflect) {
+      if (BUILD.slot && tag === "slot" && !useNativeShadowDom) {
         if (
-          BUILD11.experimentalSlotFixes &&
-          oldVNode.$name$ !== newVNode2.$name$
+          BUILD.experimentalSlotFixes &&
+          oldVNode.$name$ !== newVNode.$name$
         ) {
-          newVNode2.$elm$["s-sn"] = newVNode2.$name$ || "";
-          relocateToHostRoot(newVNode2.$elm$.parentElement);
+          newVNode.$elm$["s-sn"] = newVNode.$name$ || "";
+          relocateToHostRoot(newVNode.$elm$.parentElement);
         }
       } else {
-        updateElement(oldVNode, newVNode2, isSvgMode);
+        updateElement(oldVNode, newVNode, isSvgMode);
       }
     }
-    if (BUILD11.updatable && oldChildren !== null && newChildren !== null) {
-      updateChildren(elm, oldChildren, newVNode2, newChildren, isInitialRender);
+    if (BUILD.updatable && oldChildren !== null && newChildren !== null) {
+      updateChildren(elm, oldChildren, newVNode, newChildren, isInitialRender);
     } else if (newChildren !== null) {
-      if (BUILD11.updatable && BUILD11.vdomText && oldVNode.$text$ !== null) {
+      if (BUILD.updatable && BUILD.vdomText && oldVNode.$text$ !== null) {
         elm.textContent = "";
       }
-      addVnodes(elm, null, newVNode2, newChildren, 0, newChildren.length - 1);
-    } else if (BUILD11.updatable && oldChildren !== null) {
+      addVnodes(elm, null, newVNode, newChildren, 0, newChildren.length - 1);
+    } else if (BUILD.updatable && oldChildren !== null) {
       removeVnodes(oldChildren, 0, oldChildren.length - 1);
     }
-    if (BUILD11.svg && isSvgMode && tag === "svg") {
+    if (BUILD.svg && isSvgMode && tag === "svg") {
       isSvgMode = false;
     }
   } else if (
-    BUILD11.vdomText &&
-    BUILD11.slotRelocation &&
+    BUILD.vdomText &&
+    BUILD.slotRelocation &&
     (defaultHolder = elm["s-cr"])
   ) {
     defaultHolder.parentNode.textContent = text;
-  } else if (BUILD11.vdomText && oldVNode.$text$ !== text) {
+  } else if (BUILD.vdomText && oldVNode.$text$ !== text) {
     elm.data = text;
   }
 };
-var updateFallbackSlotVisibility = (elm) => {
+const updateFallbackSlotVisibility = (elm) => {
   const childNodes = elm.childNodes;
   for (const childNode of childNodes) {
     if (childNode.nodeType === 1) {
@@ -1272,8 +1237,8 @@ var updateFallbackSlotVisibility = (elm) => {
     }
   }
 };
-var relocateNodes = [];
-var markSlotContentForRelocation = (elm) => {
+const relocateNodes = [];
+const markSlotContentForRelocation = (elm) => {
   let node;
   let hostContentNodes;
   let j;
@@ -1287,7 +1252,7 @@ var markSlotContentForRelocation = (elm) => {
           !node["s-cn"] &&
           !node["s-nr"] &&
           node["s-hn"] !== childNode["s-hn"] &&
-          (!BUILD11.experimentalSlotFixes ||
+          (!BUILD.experimentalSlotFixes ||
             !node["s-sh"] ||
             node["s-sh"] !== childNode["s-hn"])
         ) {
@@ -1335,7 +1300,7 @@ var markSlotContentForRelocation = (elm) => {
     }
   }
 };
-var isNodeLocatedInSlot = (nodeToRelocate, slotName) => {
+const isNodeLocatedInSlot = (nodeToRelocate, slotName) => {
   if (nodeToRelocate.nodeType === 1) {
     if (nodeToRelocate.getAttribute("slot") === null && slotName === "") {
       return true;
@@ -1350,13 +1315,13 @@ var isNodeLocatedInSlot = (nodeToRelocate, slotName) => {
   }
   return slotName === "";
 };
-var nullifyVNodeRefs = (vNode) => {
-  if (BUILD11.vdomRef) {
+const nullifyVNodeRefs = (vNode) => {
+  if (BUILD.vdomRef) {
     vNode.$attrs$ && vNode.$attrs$.ref && vNode.$attrs$.ref(null);
     vNode.$children$ && vNode.$children$.map(nullifyVNodeRefs);
   }
 };
-var renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
+const renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
   var _a, _b, _c, _d, _e;
   const hostElm = hostRef.$hostElement$;
   const cmpMeta = hostRef.$cmpMeta$;
@@ -1366,7 +1331,7 @@ var renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
     : h(null, null, renderFnResults);
   hostTagName = hostElm.tagName;
   if (
-    BUILD11.isDev &&
+    BUILD.isDev &&
     Array.isArray(renderFnResults) &&
     renderFnResults.some(isHost)
   ) {
@@ -1374,7 +1339,7 @@ var renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
       `The <Host> must be the single root component.\nLooks like the render() function of "${hostTagName.toLowerCase()}" is returning an array that contains the <Host>.\n\nThe render() function should look like this instead:\n\nrender() {\n  // Do not return an array\n  return (\n    <Host>{content}</Host>\n  );\n}\n  `,
     );
   }
-  if (BUILD11.reflect && cmpMeta.$attrsToReflect$) {
+  if (BUILD.reflect && cmpMeta.$attrsToReflect$) {
     rootVnode.$attrs$ = rootVnode.$attrs$ || {};
     cmpMeta.$attrsToReflect$.map(
       ([propName, attribute]) =>
@@ -1394,19 +1359,19 @@ var renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
   rootVnode.$tag$ = null;
   rootVnode.$flags$ |= 4;
   hostRef.$vnode$ = rootVnode;
-  rootVnode.$elm$ = oldVNode.$elm$ = BUILD11.shadowDom
+  rootVnode.$elm$ = oldVNode.$elm$ = BUILD.shadowDom
     ? hostElm.shadowRoot || hostElm
     : hostElm;
-  if (BUILD11.scoped || BUILD11.shadowDom) {
+  if (BUILD.scoped || BUILD.shadowDom) {
     scopeId = hostElm["s-sc"];
   }
   useNativeShadowDom = supportsShadow && (cmpMeta.$flags$ & 1) !== 0;
-  if (BUILD11.slotRelocation) {
+  if (BUILD.slotRelocation) {
     contentRef = hostElm["s-cr"];
     checkSlotFallbackVisibility = false;
   }
   patch(oldVNode, rootVnode, isInitialLoad);
-  if (BUILD11.slotRelocation) {
+  if (BUILD.slotRelocation) {
     plt.$flags$ |= 1;
     if (checkSlotRelocate) {
       markSlotContentForRelocation(rootVnode.$elm$);
@@ -1414,7 +1379,7 @@ var renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
         const nodeToRelocate = relocateData.$nodeToRelocate$;
         if (!nodeToRelocate["s-ol"]) {
           const orgLocationNode =
-            BUILD11.isDebug || BUILD11.hydrateServerSide
+            BUILD.isDebug || BUILD.hydrateServerSide
               ? originalLocationDebugNode(nodeToRelocate)
               : doc.createTextNode("");
           orgLocationNode["s-nr"] = nodeToRelocate;
@@ -1431,21 +1396,35 @@ var renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
           const parentNodeRef = slotRefNode.parentNode;
           let insertBeforeNode = slotRefNode.nextSibling;
           if (
-            !BUILD11.experimentalSlotFixes ||
+            !BUILD.experimentalSlotFixes ||
             (insertBeforeNode && insertBeforeNode.nodeType === 1)
           ) {
             let orgLocationNode =
-              (_a = nodeToRelocate["s-ol"]) == null
+              (_a = nodeToRelocate["s-ol"]) === null || _a === void 0
                 ? void 0
                 : _a.previousSibling;
             while (orgLocationNode) {
-              let refNode = (_b = orgLocationNode["s-nr"]) != null ? _b : null;
+              let refNode =
+                (_b = orgLocationNode["s-nr"]) !== null && _b !== void 0
+                  ? _b
+                  : null;
               if (
                 refNode &&
                 refNode["s-sn"] === nodeToRelocate["s-sn"] &&
                 parentNodeRef === refNode.parentNode
               ) {
                 refNode = refNode.nextSibling;
+                while (
+                  refNode === nodeToRelocate ||
+                  (refNode === null || refNode === void 0
+                    ? void 0
+                    : refNode["s-sr"])
+                ) {
+                  refNode =
+                    refNode === null || refNode === void 0
+                      ? void 0
+                      : refNode.nextSibling;
+                }
                 if (!refNode || !refNode["s-nr"]) {
                   insertBeforeNode = refNode;
                   break;
@@ -1461,7 +1440,7 @@ var renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
           ) {
             if (nodeToRelocate !== insertBeforeNode) {
               if (
-                !BUILD11.experimentalSlotFixes &&
+                !BUILD.experimentalSlotFixes &&
                 !nodeToRelocate["s-hn"] &&
                 nodeToRelocate["s-ol"]
               ) {
@@ -1471,15 +1450,22 @@ var renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
               parentNodeRef.insertBefore(nodeToRelocate, insertBeforeNode);
               if (nodeToRelocate.nodeType === 1) {
                 nodeToRelocate.hidden =
-                  (_c = nodeToRelocate["s-ih"]) != null ? _c : false;
+                  (_c = nodeToRelocate["s-ih"]) !== null && _c !== void 0
+                    ? _c
+                    : false;
               }
             }
           }
+          nodeToRelocate &&
+            typeof slotRefNode["s-rf"] === "function" &&
+            slotRefNode["s-rf"](nodeToRelocate);
         } else {
           if (nodeToRelocate.nodeType === 1) {
             if (isInitialLoad) {
               nodeToRelocate["s-ih"] =
-                (_d = nodeToRelocate.hidden) != null ? _d : false;
+                (_d = nodeToRelocate.hidden) !== null && _d !== void 0
+                  ? _d
+                  : false;
             }
             nodeToRelocate.hidden = true;
           }
@@ -1492,32 +1478,33 @@ var renderVdom = (hostRef, renderFnResults, isInitialLoad = false) => {
     plt.$flags$ &= ~1;
     relocateNodes.length = 0;
   }
-  if (BUILD11.experimentalScopedSlotChanges && cmpMeta.$flags$ & 2) {
+  if (BUILD.experimentalScopedSlotChanges && cmpMeta.$flags$ & 2) {
     for (const childNode of rootVnode.$elm$.childNodes) {
       if (childNode["s-hn"] !== hostTagName && !childNode["s-sh"]) {
         if (isInitialLoad && childNode["s-ih"] == null) {
-          childNode["s-ih"] = (_e = childNode.hidden) != null ? _e : false;
+          childNode["s-ih"] =
+            (_e = childNode.hidden) !== null && _e !== void 0 ? _e : false;
         }
         childNode.hidden = true;
       }
     }
   }
-  contentRef = void 0;
+  contentRef = undefined;
 };
-var slotReferenceDebugNode = (slotVNode) =>
+const slotReferenceDebugNode = (slotVNode) =>
   doc.createComment(
     `<slot${slotVNode.$name$ ? ' name="' + slotVNode.$name$ + '"' : ""}> (host=${hostTagName.toLowerCase()})`,
   );
-var originalLocationDebugNode = (nodeToRelocate) =>
+const originalLocationDebugNode = (nodeToRelocate) =>
   doc.createComment(
     `org-location for ` +
       (nodeToRelocate.localName
         ? `<${nodeToRelocate.localName}> (host=${nodeToRelocate["s-hn"]})`
         : `[${nodeToRelocate.textContent}]`),
   );
-var attachToAncestor = (hostRef, ancestorComponent) => {
+const attachToAncestor = (hostRef, ancestorComponent) => {
   if (
-    BUILD12.asyncLoading &&
+    BUILD.asyncLoading &&
     ancestorComponent &&
     !hostRef.$onRenderResolve$ &&
     ancestorComponent["s-p"]
@@ -1527,45 +1514,45 @@ var attachToAncestor = (hostRef, ancestorComponent) => {
     );
   }
 };
-var scheduleUpdate = (hostRef, isInitialLoad) => {
-  if (BUILD12.taskQueue && BUILD12.updatable) {
+const scheduleUpdate = (hostRef, isInitialLoad) => {
+  if (BUILD.taskQueue && BUILD.updatable) {
     hostRef.$flags$ |= 16;
   }
-  if (BUILD12.asyncLoading && hostRef.$flags$ & 4) {
+  if (BUILD.asyncLoading && hostRef.$flags$ & 4) {
     hostRef.$flags$ |= 512;
     return;
   }
   attachToAncestor(hostRef, hostRef.$ancestorComponent$);
   const dispatch = () => dispatchHooks(hostRef, isInitialLoad);
-  return BUILD12.taskQueue ? writeTask(dispatch) : dispatch();
+  return BUILD.taskQueue ? writeTask(dispatch) : dispatch();
 };
-var dispatchHooks = (hostRef, isInitialLoad) => {
+const dispatchHooks = (hostRef, isInitialLoad) => {
   const elm = hostRef.$hostElement$;
   const endSchedule = createTime("scheduleUpdate", hostRef.$cmpMeta$.$tagName$);
-  const instance = BUILD12.lazyLoad ? hostRef.$lazyInstance$ : elm;
+  const instance = BUILD.lazyLoad ? hostRef.$lazyInstance$ : elm;
   let maybePromise;
   if (isInitialLoad) {
-    if (BUILD12.lazyLoad && BUILD12.hostListener) {
+    if (BUILD.lazyLoad && BUILD.hostListener) {
       hostRef.$flags$ |= 256;
       if (hostRef.$queuedListeners$) {
         hostRef.$queuedListeners$.map(([methodName, event]) =>
           safeCall(instance, methodName, event),
         );
-        hostRef.$queuedListeners$ = void 0;
+        hostRef.$queuedListeners$ = undefined;
       }
     }
     emitLifecycleEvent(elm, "componentWillLoad");
-    if (BUILD12.cmpWillLoad) {
+    if (BUILD.cmpWillLoad) {
       maybePromise = safeCall(instance, "componentWillLoad");
     }
   } else {
     emitLifecycleEvent(elm, "componentWillUpdate");
-    if (BUILD12.cmpWillUpdate) {
+    if (BUILD.cmpWillUpdate) {
       maybePromise = safeCall(instance, "componentWillUpdate");
     }
   }
   emitLifecycleEvent(elm, "componentWillRender");
-  if (BUILD12.cmpWillRender) {
+  if (BUILD.cmpWillRender) {
     maybePromise = enqueue(maybePromise, () =>
       safeCall(instance, "componentWillRender"),
     );
@@ -1575,36 +1562,36 @@ var dispatchHooks = (hostRef, isInitialLoad) => {
     updateComponent(hostRef, instance, isInitialLoad),
   );
 };
-var enqueue = (maybePromise, fn) =>
+const enqueue = (maybePromise, fn) =>
   isPromisey(maybePromise) ? maybePromise.then(fn) : fn();
-var isPromisey = (maybePromise) =>
+const isPromisey = (maybePromise) =>
   maybePromise instanceof Promise ||
   (maybePromise &&
     maybePromise.then &&
     typeof maybePromise.then === "function");
-var updateComponent = async (hostRef, instance, isInitialLoad) => {
+const updateComponent = async (hostRef, instance, isInitialLoad) => {
   var _a;
   const elm = hostRef.$hostElement$;
   const endUpdate = createTime("update", hostRef.$cmpMeta$.$tagName$);
   const rc = elm["s-rc"];
-  if (BUILD12.style && isInitialLoad) {
+  if (BUILD.style && isInitialLoad) {
     attachStyles(hostRef);
   }
   const endRender = createTime("render", hostRef.$cmpMeta$.$tagName$);
-  if (BUILD12.isDev) {
+  if (BUILD.isDev) {
     hostRef.$flags$ |= 1024;
   }
-  if (BUILD12.hydrateServerSide) {
+  if (BUILD.hydrateServerSide) {
     await callRender(hostRef, instance, elm, isInitialLoad);
   } else {
     callRender(hostRef, instance, elm, isInitialLoad);
   }
-  if (BUILD12.isDev) {
+  if (BUILD.isDev) {
     hostRef.$renderCount$ =
-      hostRef.$renderCount$ === void 0 ? 1 : hostRef.$renderCount$ + 1;
+      hostRef.$renderCount$ === undefined ? 1 : hostRef.$renderCount$ + 1;
     hostRef.$flags$ &= ~1024;
   }
-  if (BUILD12.hydrateServerSide) {
+  if (BUILD.hydrateServerSide) {
     try {
       serverSideConnected(elm);
       if (isInitialLoad) {
@@ -1618,14 +1605,15 @@ var updateComponent = async (hostRef, instance, isInitialLoad) => {
       consoleError(e, elm);
     }
   }
-  if (BUILD12.asyncLoading && rc) {
+  if (BUILD.asyncLoading && rc) {
     rc.map((cb) => cb());
-    elm["s-rc"] = void 0;
+    elm["s-rc"] = undefined;
   }
   endRender();
   endUpdate();
-  if (BUILD12.asyncLoading) {
-    const childrenPromises = (_a = elm["s-p"]) != null ? _a : [];
+  if (BUILD.asyncLoading) {
+    const childrenPromises =
+      (_a = elm["s-p"]) !== null && _a !== void 0 ? _a : [];
     const postUpdate = () => postUpdateComponent(hostRef);
     if (childrenPromises.length === 0) {
       postUpdate();
@@ -1638,12 +1626,11 @@ var updateComponent = async (hostRef, instance, isInitialLoad) => {
     postUpdateComponent(hostRef);
   }
 };
-var renderingRef = null;
-var callRender = (hostRef, instance, elm, isInitialLoad) => {
-  const allRenderFn = BUILD12.allRenderFn ? true : false;
-  const lazyLoad = BUILD12.lazyLoad ? true : false;
-  const taskQueue = BUILD12.taskQueue ? true : false;
-  const updatable = BUILD12.updatable ? true : false;
+const callRender = (hostRef, instance, elm, isInitialLoad) => {
+  const allRenderFn = BUILD.allRenderFn ? true : false;
+  const lazyLoad = BUILD.lazyLoad ? true : false;
+  const taskQueue = BUILD.taskQueue ? true : false;
+  const updatable = BUILD.updatable ? true : false;
   try {
     renderingRef = instance;
     instance = allRenderFn
@@ -1655,9 +1642,9 @@ var callRender = (hostRef, instance, elm, isInitialLoad) => {
     if (updatable || lazyLoad) {
       hostRef.$flags$ |= 2;
     }
-    if (BUILD12.hasRenderFn || BUILD12.reflect) {
-      if (BUILD12.vdomRender || BUILD12.reflect) {
-        if (BUILD12.hydrateServerSide) {
+    if (BUILD.hasRenderFn || BUILD.reflect) {
+      if (BUILD.vdomRender || BUILD.reflect) {
+        if (BUILD.hydrateServerSide) {
           return Promise.resolve(instance).then((value) =>
             renderVdom(hostRef, value, isInitialLoad),
           );
@@ -1679,65 +1666,65 @@ var callRender = (hostRef, instance, elm, isInitialLoad) => {
   renderingRef = null;
   return null;
 };
-var getRenderingRef = () => renderingRef;
-var postUpdateComponent = (hostRef) => {
+const getRenderingRef = () => renderingRef;
+const postUpdateComponent = (hostRef) => {
   const tagName = hostRef.$cmpMeta$.$tagName$;
   const elm = hostRef.$hostElement$;
   const endPostUpdate = createTime("postUpdate", tagName);
-  const instance = BUILD12.lazyLoad ? hostRef.$lazyInstance$ : elm;
+  const instance = BUILD.lazyLoad ? hostRef.$lazyInstance$ : elm;
   const ancestorComponent = hostRef.$ancestorComponent$;
-  if (BUILD12.cmpDidRender) {
-    if (BUILD12.isDev) {
+  if (BUILD.cmpDidRender) {
+    if (BUILD.isDev) {
       hostRef.$flags$ |= 1024;
     }
     safeCall(instance, "componentDidRender");
-    if (BUILD12.isDev) {
+    if (BUILD.isDev) {
       hostRef.$flags$ &= ~1024;
     }
   }
   emitLifecycleEvent(elm, "componentDidRender");
   if (!(hostRef.$flags$ & 64)) {
     hostRef.$flags$ |= 64;
-    if (BUILD12.asyncLoading && BUILD12.cssAnnotations) {
+    if (BUILD.asyncLoading && BUILD.cssAnnotations) {
       addHydratedFlag(elm);
     }
-    if (BUILD12.cmpDidLoad) {
-      if (BUILD12.isDev) {
+    if (BUILD.cmpDidLoad) {
+      if (BUILD.isDev) {
         hostRef.$flags$ |= 2048;
       }
       safeCall(instance, "componentDidLoad");
-      if (BUILD12.isDev) {
+      if (BUILD.isDev) {
         hostRef.$flags$ &= ~2048;
       }
     }
     emitLifecycleEvent(elm, "componentDidLoad");
     endPostUpdate();
-    if (BUILD12.asyncLoading) {
+    if (BUILD.asyncLoading) {
       hostRef.$onReadyResolve$(elm);
       if (!ancestorComponent) {
         appDidLoad(tagName);
       }
     }
   } else {
-    if (BUILD12.cmpDidUpdate) {
-      if (BUILD12.isDev) {
+    if (BUILD.cmpDidUpdate) {
+      if (BUILD.isDev) {
         hostRef.$flags$ |= 1024;
       }
       safeCall(instance, "componentDidUpdate");
-      if (BUILD12.isDev) {
+      if (BUILD.isDev) {
         hostRef.$flags$ &= ~1024;
       }
     }
     emitLifecycleEvent(elm, "componentDidUpdate");
     endPostUpdate();
   }
-  if (BUILD12.method && BUILD12.lazyLoad) {
+  if (BUILD.method && BUILD.lazyLoad) {
     hostRef.$onInstanceResolve$(elm);
   }
-  if (BUILD12.asyncLoading) {
+  if (BUILD.asyncLoading) {
     if (hostRef.$onRenderResolve$) {
       hostRef.$onRenderResolve$();
-      hostRef.$onRenderResolve$ = void 0;
+      hostRef.$onRenderResolve$ = undefined;
     }
     if (hostRef.$flags$ & 512) {
       nextTick(() => scheduleUpdate(hostRef, false));
@@ -1745,8 +1732,8 @@ var postUpdateComponent = (hostRef) => {
     hostRef.$flags$ &= ~(4 | 512);
   }
 };
-var forceUpdate = (ref) => {
-  if (BUILD12.updatable && (Build.isBrowser || Build.isTesting)) {
+const forceUpdate = (ref) => {
+  if (BUILD.updatable && (Build.isBrowser || Build.isTesting)) {
     const hostRef = getHostRef(ref);
     const isConnected = hostRef.$hostElement$.isConnected;
     if (isConnected && (hostRef.$flags$ & (2 | 16)) === 2) {
@@ -1756,24 +1743,24 @@ var forceUpdate = (ref) => {
   }
   return false;
 };
-var appDidLoad = (who) => {
-  if (BUILD12.cssAnnotations) {
+const appDidLoad = (who) => {
+  if (BUILD.cssAnnotations) {
     addHydratedFlag(doc.documentElement);
   }
-  if (BUILD12.asyncQueue) {
+  if (BUILD.asyncQueue) {
     plt.$flags$ |= 2;
   }
   nextTick(() =>
     emitEvent(win, "appload", { detail: { namespace: NAMESPACE } }),
   );
-  if (BUILD12.profile && performance.measure) {
+  if (BUILD.profile && performance.measure) {
     performance.measure(
       `[Stencil] ${NAMESPACE} initial load (by ${who})`,
       "st:app:start",
     );
   }
 };
-var safeCall = (instance, method, arg) => {
+const safeCall = (instance, method, arg) => {
   if (instance && instance[method]) {
     try {
       return instance[method](arg);
@@ -1781,10 +1768,10 @@ var safeCall = (instance, method, arg) => {
       consoleError(e);
     }
   }
-  return void 0;
+  return undefined;
 };
-var emitLifecycleEvent = (elm, lifecycleName) => {
-  if (BUILD12.lifecycleDOMEvents) {
+const emitLifecycleEvent = (elm, lifecycleName) => {
+  if (BUILD.lifecycleDOMEvents) {
     emitEvent(elm, "stencil_" + lifecycleName, {
       bubbles: true,
       composed: true,
@@ -1792,17 +1779,17 @@ var emitLifecycleEvent = (elm, lifecycleName) => {
     });
   }
 };
-var addHydratedFlag = (elm) =>
-  BUILD12.hydratedClass
+const addHydratedFlag = (elm) =>
+  BUILD.hydratedClass
     ? elm.classList.add("hydrated")
-    : BUILD12.hydratedAttribute
+    : BUILD.hydratedAttribute
       ? elm.setAttribute("hydrated", "")
-      : void 0;
-var serverSideConnected = (elm) => {
+      : undefined;
+const serverSideConnected = (elm) => {
   const children = elm.children;
   if (children != null) {
-    for (let i2 = 0, ii = children.length; i2 < ii; i2++) {
-      const childElm = children[i2];
+    for (let i = 0, ii = children.length; i < ii; i++) {
+      const childElm = children[i];
       if (typeof childElm.connectedCallback === "function") {
         childElm.connectedCallback();
       }
@@ -1810,23 +1797,23 @@ var serverSideConnected = (elm) => {
     }
   }
 };
-var getValue = (ref, propName) =>
+const getValue = (ref, propName) =>
   getHostRef(ref).$instanceValues$.get(propName);
-var setValue = (ref, propName, newVal, cmpMeta) => {
+const setValue = (ref, propName, newVal, cmpMeta) => {
   const hostRef = getHostRef(ref);
-  const elm = BUILD13.lazyLoad ? hostRef.$hostElement$ : ref;
+  const elm = BUILD.lazyLoad ? hostRef.$hostElement$ : ref;
   const oldVal = hostRef.$instanceValues$.get(propName);
   const flags = hostRef.$flags$;
-  const instance = BUILD13.lazyLoad ? hostRef.$lazyInstance$ : elm;
+  const instance = BUILD.lazyLoad ? hostRef.$lazyInstance$ : elm;
   newVal = parsePropertyValue(newVal, cmpMeta.$members$[propName][0]);
   const areBothNaN = Number.isNaN(oldVal) && Number.isNaN(newVal);
   const didValueChange = newVal !== oldVal && !areBothNaN;
   if (
-    (!BUILD13.lazyLoad || !(flags & 8) || oldVal === void 0) &&
+    (!BUILD.lazyLoad || !(flags & 8) || oldVal === undefined) &&
     didValueChange
   ) {
     hostRef.$instanceValues$.set(propName, newVal);
-    if (BUILD13.isDev) {
+    if (BUILD.isDev) {
       if (hostRef.$flags$ & 1024) {
         consoleDevWarn(
           `The state/prop "${propName}" changed during rendering. This can potentially lead to infinite-loops and other bugs.`,
@@ -1849,8 +1836,8 @@ var setValue = (ref, propName, newVal, cmpMeta) => {
         );
       }
     }
-    if (!BUILD13.lazyLoad || instance) {
-      if (BUILD13.watchCallback && cmpMeta.$watchers$ && flags & 128) {
+    if (!BUILD.lazyLoad || instance) {
+      if (BUILD.watchCallback && cmpMeta.$watchers$ && flags & 128) {
         const watchMethods = cmpMeta.$watchers$[propName];
         if (watchMethods) {
           watchMethods.map((watchMethodName) => {
@@ -1862,8 +1849,8 @@ var setValue = (ref, propName, newVal, cmpMeta) => {
           });
         }
       }
-      if (BUILD13.updatable && (flags & (2 | 16)) === 2) {
-        if (BUILD13.cmpShouldUpdate && instance.componentShouldUpdate) {
+      if (BUILD.updatable && (flags & (2 | 16)) === 2) {
+        if (BUILD.cmpShouldUpdate && instance.componentShouldUpdate) {
           if (
             instance.componentShouldUpdate(newVal, oldVal, propName) === false
           ) {
@@ -1875,20 +1862,20 @@ var setValue = (ref, propName, newVal, cmpMeta) => {
     }
   }
 };
-var proxyComponent = (Cstr, cmpMeta, flags) => {
+const proxyComponent = (Cstr, cmpMeta, flags) => {
   var _a;
   const prototype = Cstr.prototype;
-  if (BUILD14.formAssociated && cmpMeta.$flags$ & 64 && flags & 1) {
+  if (BUILD.formAssociated && cmpMeta.$flags$ & 64 && flags & 1) {
     FORM_ASSOCIATED_CUSTOM_ELEMENT_CALLBACKS.forEach((cbName) =>
       Object.defineProperty(prototype, cbName, {
         value(...args) {
           const hostRef = getHostRef(this);
-          const elm = BUILD14.lazyLoad ? hostRef.$hostElement$ : this;
-          const instance = BUILD14.lazyLoad ? hostRef.$lazyInstance$ : elm;
+          const elm = BUILD.lazyLoad ? hostRef.$hostElement$ : this;
+          const instance = BUILD.lazyLoad ? hostRef.$lazyInstance$ : elm;
           if (!instance) {
-            hostRef.$onReadyPromise$.then((instance2) => {
-              const cb = instance2[cbName];
-              typeof cb === "function" && cb.call(instance2, ...args);
+            hostRef.$onReadyPromise$.then((instance) => {
+              const cb = instance[cbName];
+              typeof cb === "function" && cb.call(instance, ...args);
             });
           } else {
             const cb = instance[cbName];
@@ -1898,23 +1885,23 @@ var proxyComponent = (Cstr, cmpMeta, flags) => {
       }),
     );
   }
-  if (BUILD14.member && cmpMeta.$members$) {
-    if (BUILD14.watchCallback && Cstr.watchers) {
+  if (BUILD.member && cmpMeta.$members$) {
+    if (BUILD.watchCallback && Cstr.watchers) {
       cmpMeta.$watchers$ = Cstr.watchers;
     }
     const members = Object.entries(cmpMeta.$members$);
     members.map(([memberName, [memberFlags]]) => {
       if (
-        (BUILD14.prop || BUILD14.state) &&
+        (BUILD.prop || BUILD.state) &&
         (memberFlags & 31 ||
-          ((!BUILD14.lazyLoad || flags & 2) && memberFlags & 32))
+          ((!BUILD.lazyLoad || flags & 2) && memberFlags & 32))
       ) {
         Object.defineProperty(prototype, memberName, {
           get() {
             return getValue(this, memberName);
           },
           set(newValue) {
-            if (BUILD14.isDev) {
+            if (BUILD.isDev) {
               const ref = getHostRef(this);
               if (
                 (flags & 1) === 0 &&
@@ -1933,29 +1920,31 @@ var proxyComponent = (Cstr, cmpMeta, flags) => {
           enumerable: true,
         });
       } else if (
-        BUILD14.lazyLoad &&
-        BUILD14.method &&
+        BUILD.lazyLoad &&
+        BUILD.method &&
         flags & 1 &&
         memberFlags & 64
       ) {
         Object.defineProperty(prototype, memberName, {
           value(...args) {
-            var _a2;
+            var _a;
             const ref = getHostRef(this);
-            return (_a2 = ref == null ? void 0 : ref.$onInstancePromise$) ==
-              null
+            return (_a =
+              ref === null || ref === void 0
+                ? void 0
+                : ref.$onInstancePromise$) === null || _a === void 0
               ? void 0
-              : _a2.then(() => {
-                  var _a3;
-                  return (_a3 = ref.$lazyInstance$) == null
+              : _a.then(() => {
+                  var _a;
+                  return (_a = ref.$lazyInstance$) === null || _a === void 0
                     ? void 0
-                    : _a3[memberName](...args);
+                    : _a[memberName](...args);
                 });
           },
         });
       }
     });
-    if (BUILD14.observeAttribute && (!BUILD14.lazyLoad || flags & 1)) {
+    if (BUILD.observeAttribute && (!BUILD.lazyLoad || flags & 1)) {
       const attrNameToPropName = new Map();
       prototype.attributeChangedCallback = function (
         attrName,
@@ -1963,7 +1952,7 @@ var proxyComponent = (Cstr, cmpMeta, flags) => {
         newValue,
       ) {
         plt.jmp(() => {
-          var _a2;
+          var _a;
           const propName = attrNameToPropName.get(attrName);
           if (this.hasOwnProperty(propName)) {
             newValue = this[propName];
@@ -1976,18 +1965,16 @@ var proxyComponent = (Cstr, cmpMeta, flags) => {
             return;
           } else if (propName == null) {
             const hostRef = getHostRef(this);
-            const flags2 = hostRef == null ? void 0 : hostRef.$flags$;
-            if (
-              flags2 &&
-              !(flags2 & 8) &&
-              flags2 & 128 &&
-              newValue !== oldValue
-            ) {
-              const elm = BUILD14.lazyLoad ? hostRef.$hostElement$ : this;
-              const instance = BUILD14.lazyLoad ? hostRef.$lazyInstance$ : elm;
+            const flags =
+              hostRef === null || hostRef === void 0 ? void 0 : hostRef.$flags$;
+            if (flags && !(flags & 8) && flags & 128 && newValue !== oldValue) {
+              const elm = BUILD.lazyLoad ? hostRef.$hostElement$ : this;
+              const instance = BUILD.lazyLoad ? hostRef.$lazyInstance$ : elm;
               const entry =
-                (_a2 = cmpMeta.$watchers$) == null ? void 0 : _a2[attrName];
-              entry == null
+                (_a = cmpMeta.$watchers$) === null || _a === void 0
+                  ? void 0
+                  : _a[attrName];
+              entry === null || entry === void 0
                 ? void 0
                 : entry.forEach((callbackName) => {
                     if (instance[callbackName] != null) {
@@ -2010,17 +1997,19 @@ var proxyComponent = (Cstr, cmpMeta, flags) => {
       };
       Cstr.observedAttributes = Array.from(
         new Set([
-          ...Object.keys((_a = cmpMeta.$watchers$) != null ? _a : {}),
+          ...Object.keys(
+            (_a = cmpMeta.$watchers$) !== null && _a !== void 0 ? _a : {},
+          ),
           ...members
             .filter(([_, m]) => m[0] & 15)
             .map(([propName, m]) => {
-              var _a2;
+              var _a;
               const attrName = m[1] || propName;
               attrNameToPropName.set(attrName, propName);
-              if (BUILD14.reflect && m[0] & 512) {
-                (_a2 = cmpMeta.$attrsToReflect$) == null
+              if (BUILD.reflect && m[0] & 512) {
+                (_a = cmpMeta.$attrsToReflect$) === null || _a === void 0
                   ? void 0
-                  : _a2.push([propName, attrName]);
+                  : _a.push([propName, attrName]);
               }
               return attrName;
             }),
@@ -2030,11 +2019,12 @@ var proxyComponent = (Cstr, cmpMeta, flags) => {
   }
   return Cstr;
 };
-var initializeComponent = async (elm, hostRef, cmpMeta, hmrVersionId) => {
+const initializeComponent = async (elm, hostRef, cmpMeta, hmrVersionId) => {
   let Cstr;
   if ((hostRef.$flags$ & 32) === 0) {
     hostRef.$flags$ |= 32;
-    if (BUILD15.lazyLoad || BUILD15.hydrateClientSide) {
+    const bundleId = cmpMeta.$lazyBundleId$;
+    if ((BUILD.lazyLoad || BUILD.hydrateClientSide) && bundleId) {
       Cstr = loadModule(cmpMeta, hostRef, hmrVersionId);
       if (Cstr.then) {
         const endLoad = uniqueTime(
@@ -2044,20 +2034,20 @@ var initializeComponent = async (elm, hostRef, cmpMeta, hmrVersionId) => {
         Cstr = await Cstr;
         endLoad();
       }
-      if ((BUILD15.isDev || BUILD15.isDebug) && !Cstr) {
+      if ((BUILD.isDev || BUILD.isDebug) && !Cstr) {
         throw new Error(
           `Constructor for "${cmpMeta.$tagName$}#${hostRef.$modeName$}" was not found`,
         );
       }
-      if (BUILD15.member && !Cstr.isProxied) {
-        if (BUILD15.watchCallback) {
+      if (BUILD.member && !Cstr.isProxied) {
+        if (BUILD.watchCallback) {
           cmpMeta.$watchers$ = Cstr.watchers;
         }
         proxyComponent(Cstr, cmpMeta, 2);
         Cstr.isProxied = true;
       }
       const endNewInstance = createTime("createInstance", cmpMeta.$tagName$);
-      if (BUILD15.member) {
+      if (BUILD.member) {
         hostRef.$flags$ |= 8;
       }
       try {
@@ -2065,10 +2055,10 @@ var initializeComponent = async (elm, hostRef, cmpMeta, hmrVersionId) => {
       } catch (e) {
         consoleError(e);
       }
-      if (BUILD15.member) {
+      if (BUILD.member) {
         hostRef.$flags$ &= ~8;
       }
-      if (BUILD15.watchCallback) {
+      if (BUILD.watchCallback) {
         hostRef.$flags$ |= 128;
       }
       endNewInstance();
@@ -2079,87 +2069,87 @@ var initializeComponent = async (elm, hostRef, cmpMeta, hmrVersionId) => {
         .whenDefined(cmpMeta.$tagName$)
         .then(() => (hostRef.$flags$ |= 128));
     }
-    if (BUILD15.style && Cstr.style) {
+    if (BUILD.style && Cstr.style) {
       let style = Cstr.style;
-      if (BUILD15.mode && typeof style !== "string") {
+      if (BUILD.mode && typeof style !== "string") {
         style = style[(hostRef.$modeName$ = computeMode(elm))];
-        if (BUILD15.hydrateServerSide && hostRef.$modeName$) {
+        if (BUILD.hydrateServerSide && hostRef.$modeName$) {
           elm.setAttribute("s-mode", hostRef.$modeName$);
         }
       }
-      const scopeId2 = getScopeId(cmpMeta, hostRef.$modeName$);
-      if (!styles.has(scopeId2)) {
+      const scopeId = getScopeId(cmpMeta, hostRef.$modeName$);
+      if (!styles.has(scopeId)) {
         const endRegisterStyles = createTime(
           "registerStyles",
           cmpMeta.$tagName$,
         );
         if (
-          !BUILD15.hydrateServerSide &&
-          BUILD15.shadowDom &&
-          BUILD15.shadowDomShim &&
+          !BUILD.hydrateServerSide &&
+          BUILD.shadowDom &&
+          BUILD.shadowDomShim &&
           cmpMeta.$flags$ & 8
         ) {
-          style = await import("./internal/client/shadow-css.js").then((m) =>
-            m.scopeCss(style, scopeId2, false),
+          style = await import("./shadow-css.js").then((m) =>
+            m.scopeCss(style, scopeId, false),
           );
         }
-        registerStyle(scopeId2, style, !!(cmpMeta.$flags$ & 1));
+        registerStyle(scopeId, style, !!(cmpMeta.$flags$ & 1));
         endRegisterStyles();
       }
     }
   }
   const ancestorComponent = hostRef.$ancestorComponent$;
   const schedule = () => scheduleUpdate(hostRef, true);
-  if (BUILD15.asyncLoading && ancestorComponent && ancestorComponent["s-rc"]) {
+  if (BUILD.asyncLoading && ancestorComponent && ancestorComponent["s-rc"]) {
     ancestorComponent["s-rc"].push(schedule);
   } else {
     schedule();
   }
 };
-var fireConnectedCallback = (instance) => {
-  if (BUILD15.lazyLoad && BUILD15.connectedCallback) {
+const fireConnectedCallback = (instance) => {
+  if (BUILD.lazyLoad && BUILD.connectedCallback) {
     safeCall(instance, "connectedCallback");
   }
 };
-var connectedCallback = (elm) => {
+const connectedCallback = (elm) => {
   if ((plt.$flags$ & 1) === 0) {
     const hostRef = getHostRef(elm);
     const cmpMeta = hostRef.$cmpMeta$;
     const endConnected = createTime("connectedCallback", cmpMeta.$tagName$);
-    if (BUILD16.hostListenerTargetParent) {
+    if (BUILD.hostListenerTargetParent) {
       addHostEventListeners(elm, hostRef, cmpMeta.$listeners$, true);
     }
     if (!(hostRef.$flags$ & 1)) {
       hostRef.$flags$ |= 1;
       let hostId;
-      if (BUILD16.hydrateClientSide) {
+      if (BUILD.hydrateClientSide) {
         hostId = elm.getAttribute(HYDRATE_ID);
         if (hostId) {
-          if (BUILD16.shadowDom && supportsShadow && cmpMeta.$flags$ & 1) {
-            const scopeId2 = BUILD16.mode
+          if (BUILD.shadowDom && supportsShadow && cmpMeta.$flags$ & 1) {
+            const scopeId = BUILD.mode
               ? addStyle(elm.shadowRoot, cmpMeta, elm.getAttribute("s-mode"))
               : addStyle(elm.shadowRoot, cmpMeta);
-            elm.classList.remove(scopeId2 + "-h", scopeId2 + "-s");
+            elm.classList.remove(scopeId + "-h", scopeId + "-s");
           }
           initializeClientHydrate(elm, cmpMeta.$tagName$, hostId, hostRef);
         }
       }
-      if (BUILD16.slotRelocation && !hostId) {
+      if (BUILD.slotRelocation && !hostId) {
         if (
-          BUILD16.hydrateServerSide ||
-          ((BUILD16.slot || BUILD16.shadowDom) && cmpMeta.$flags$ & (4 | 8))
+          BUILD.hydrateServerSide ||
+          ((BUILD.slot || BUILD.shadowDom) && cmpMeta.$flags$ & (4 | 8))
         ) {
           setContentReference(elm);
         }
       }
-      if (BUILD16.asyncLoading) {
+      if (BUILD.asyncLoading) {
         let ancestorComponent = elm;
         while (
           (ancestorComponent =
             ancestorComponent.parentNode || ancestorComponent.host)
         ) {
           if (
-            (BUILD16.hydrateClientSide &&
+            (BUILD.hydrateClientSide &&
               ancestorComponent.nodeType === 1 &&
               ancestorComponent.hasAttribute("s-id") &&
               ancestorComponent["s-p"]) ||
@@ -2173,7 +2163,7 @@ var connectedCallback = (elm) => {
           }
         }
       }
-      if (BUILD16.prop && !BUILD16.hydrateServerSide && cmpMeta.$members$) {
+      if (BUILD.prop && !BUILD.hydrateServerSide && cmpMeta.$members$) {
         Object.entries(cmpMeta.$members$).map(([memberName, [memberFlags]]) => {
           if (memberFlags & 31 && elm.hasOwnProperty(memberName)) {
             const value = elm[memberName];
@@ -2182,16 +2172,22 @@ var connectedCallback = (elm) => {
           }
         });
       }
-      if (BUILD16.initializeNextTick) {
+      if (BUILD.initializeNextTick) {
         nextTick(() => initializeComponent(elm, hostRef, cmpMeta));
       } else {
         initializeComponent(elm, hostRef, cmpMeta);
       }
     } else {
       addHostEventListeners(elm, hostRef, cmpMeta.$listeners$, false);
-      if (hostRef == null ? void 0 : hostRef.$lazyInstance$) {
+      if (
+        hostRef === null || hostRef === void 0 ? void 0 : hostRef.$lazyInstance$
+      ) {
         fireConnectedCallback(hostRef.$lazyInstance$);
-      } else if (hostRef == null ? void 0 : hostRef.$onReadyPromise$) {
+      } else if (
+        hostRef === null || hostRef === void 0
+          ? void 0
+          : hostRef.$onReadyPromise$
+      ) {
         hostRef.$onReadyPromise$.then(() =>
           fireConnectedCallback(hostRef.$lazyInstance$),
         );
@@ -2200,45 +2196,46 @@ var connectedCallback = (elm) => {
     endConnected();
   }
 };
-var setContentReference = (elm) => {
+const setContentReference = (elm) => {
   const contentRefElm = (elm["s-cr"] = doc.createComment(
-    BUILD16.isDebug ? `content-ref (host=${elm.localName})` : "",
+    BUILD.isDebug ? `content-ref (host=${elm.localName})` : "",
   ));
   contentRefElm["s-cn"] = true;
   elm.insertBefore(contentRefElm, elm.firstChild);
 };
-import { BUILD as BUILD17 } from "@stencil/core/internal/app-data";
-var disconnectInstance = (instance) => {
-  if (BUILD17.lazyLoad && BUILD17.disconnectedCallback) {
+const disconnectInstance = (instance) => {
+  if (BUILD.lazyLoad && BUILD.disconnectedCallback) {
     safeCall(instance, "disconnectedCallback");
   }
-  if (BUILD17.cmpDidUnload) {
+  if (BUILD.cmpDidUnload) {
     safeCall(instance, "componentDidUnload");
   }
 };
-var disconnectedCallback = async (elm) => {
+const disconnectedCallback = async (elm) => {
   if ((plt.$flags$ & 1) === 0) {
     const hostRef = getHostRef(elm);
-    if (BUILD17.hostListener) {
+    if (BUILD.hostListener) {
       if (hostRef.$rmListeners$) {
         hostRef.$rmListeners$.map((rmListener) => rmListener());
-        hostRef.$rmListeners$ = void 0;
+        hostRef.$rmListeners$ = undefined;
       }
     }
-    if (!BUILD17.lazyLoad) {
+    if (!BUILD.lazyLoad) {
       disconnectInstance(elm);
-    } else if (hostRef == null ? void 0 : hostRef.$lazyInstance$) {
+    } else if (
+      hostRef === null || hostRef === void 0 ? void 0 : hostRef.$lazyInstance$
+    ) {
       disconnectInstance(hostRef.$lazyInstance$);
-    } else if (hostRef == null ? void 0 : hostRef.$onReadyPromise$) {
+    } else if (
+      hostRef === null || hostRef === void 0 ? void 0 : hostRef.$onReadyPromise$
+    ) {
       hostRef.$onReadyPromise$.then(() =>
         disconnectInstance(hostRef.$lazyInstance$),
       );
     }
   }
 };
-import { BUILD as BUILD18 } from "@stencil/core/internal/app-data";
-import { NODE_TYPES } from "../../mock-doc/index.cjs";
-var patchPseudoShadowDom = (hostElementPrototype, descriptorPrototype) => {
+const patchPseudoShadowDom = (hostElementPrototype, descriptorPrototype) => {
   patchCloneNode(hostElementPrototype);
   patchSlotAppendChild(hostElementPrototype);
   patchSlotAppend(hostElementPrototype);
@@ -2250,16 +2247,16 @@ var patchPseudoShadowDom = (hostElementPrototype, descriptorPrototype) => {
   patchChildSlotNodes(hostElementPrototype, descriptorPrototype);
   patchSlotRemoveChild(hostElementPrototype);
 };
-var patchCloneNode = (HostElementPrototype) => {
+const patchCloneNode = (HostElementPrototype) => {
   const orgCloneNode = HostElementPrototype.cloneNode;
   HostElementPrototype.cloneNode = function (deep) {
     const srcNode = this;
-    const isShadowDom = BUILD18.shadowDom
+    const isShadowDom = BUILD.shadowDom
       ? srcNode.shadowRoot && supportsShadow
       : false;
     const clonedNode = orgCloneNode.call(srcNode, isShadowDom ? deep : false);
-    if (BUILD18.slot && !isShadowDom && deep) {
-      let i2 = 0;
+    if (BUILD.slot && !isShadowDom && deep) {
+      let i = 0;
       let slotted, nonStencilNode;
       const stencilPrivates = [
         "s-id",
@@ -2275,32 +2272,33 @@ var patchCloneNode = (HostElementPrototype) => {
         "s-ol",
         "s-nr",
         "s-si",
+        "s-rf",
       ];
-      for (; i2 < srcNode.childNodes.length; i2++) {
-        slotted = srcNode.childNodes[i2]["s-nr"];
+      for (; i < srcNode.childNodes.length; i++) {
+        slotted = srcNode.childNodes[i]["s-nr"];
         nonStencilNode = stencilPrivates.every(
-          (privateField) => !srcNode.childNodes[i2][privateField],
+          (privateField) => !srcNode.childNodes[i][privateField],
         );
         if (slotted) {
-          if (BUILD18.appendChildSlotFix && clonedNode.__appendChild) {
+          if (BUILD.appendChildSlotFix && clonedNode.__appendChild) {
             clonedNode.__appendChild(slotted.cloneNode(true));
           } else {
             clonedNode.appendChild(slotted.cloneNode(true));
           }
         }
         if (nonStencilNode) {
-          clonedNode.appendChild(srcNode.childNodes[i2].cloneNode(true));
+          clonedNode.appendChild(srcNode.childNodes[i].cloneNode(true));
         }
       }
     }
     return clonedNode;
   };
 };
-var patchSlotAppendChild = (HostElementPrototype) => {
+const patchSlotAppendChild = (HostElementPrototype) => {
   HostElementPrototype.__appendChild = HostElementPrototype.appendChild;
   HostElementPrototype.appendChild = function (newChild) {
     const slotName = (newChild["s-sn"] = getSlotName(newChild));
-    const slotNode = getHostSlotNode(this.childNodes, slotName);
+    const slotNode = getHostSlotNode(this.childNodes, slotName, this.tagName);
     if (slotNode) {
       const slotChildNodes = getHostSlotChildNodes(slotNode, slotName);
       const appendAfter = slotChildNodes[slotChildNodes.length - 1];
@@ -2309,17 +2307,20 @@ var patchSlotAppendChild = (HostElementPrototype) => {
         appendAfter.nextSibling,
       );
       updateFallbackSlotVisibility(this);
-      forceUpdate(this);
       return insertedNode;
     }
     return this.__appendChild(newChild);
   };
 };
-var patchSlotRemoveChild = (ElementPrototype) => {
+const patchSlotRemoveChild = (ElementPrototype) => {
   ElementPrototype.__removeChild = ElementPrototype.removeChild;
   ElementPrototype.removeChild = function (toRemove) {
     if (toRemove && typeof toRemove["s-sn"] !== "undefined") {
-      const slotNode = getHostSlotNode(this.childNodes, toRemove["s-sn"]);
+      const slotNode = getHostSlotNode(
+        this.childNodes,
+        toRemove["s-sn"],
+        this.tagName,
+      );
       if (slotNode) {
         const slotChildNodes = getHostSlotChildNodes(
           slotNode,
@@ -2336,7 +2337,7 @@ var patchSlotRemoveChild = (ElementPrototype) => {
     return this.__removeChild(toRemove);
   };
 };
-var patchSlotPrepend = (HostElementPrototype) => {
+const patchSlotPrepend = (HostElementPrototype) => {
   const originalPrepend = HostElementPrototype.prepend;
   HostElementPrototype.prepend = function (...newChildren) {
     newChildren.forEach((newChild) => {
@@ -2344,7 +2345,7 @@ var patchSlotPrepend = (HostElementPrototype) => {
         newChild = this.ownerDocument.createTextNode(newChild);
       }
       const slotName = (newChild["s-sn"] = getSlotName(newChild));
-      const slotNode = getHostSlotNode(this.childNodes, slotName);
+      const slotNode = getHostSlotNode(this.childNodes, slotName, this.tagName);
       if (slotNode) {
         const slotPlaceholder = document.createTextNode("");
         slotPlaceholder["s-nr"] = newChild;
@@ -2364,7 +2365,7 @@ var patchSlotPrepend = (HostElementPrototype) => {
     });
   };
 };
-var patchSlotAppend = (HostElementPrototype) => {
+const patchSlotAppend = (HostElementPrototype) => {
   HostElementPrototype.append = function (...newChildren) {
     newChildren.forEach((newChild) => {
       if (typeof newChild === "string") {
@@ -2374,7 +2375,7 @@ var patchSlotAppend = (HostElementPrototype) => {
     });
   };
 };
-var patchSlotInsertAdjacentHTML = (HostElementPrototype) => {
+const patchSlotInsertAdjacentHTML = (HostElementPrototype) => {
   const originalInsertAdjacentHtml = HostElementPrototype.insertAdjacentHTML;
   HostElementPrototype.insertAdjacentHTML = function (position, text) {
     if (position !== "afterbegin" && position !== "beforeend") {
@@ -2394,12 +2395,12 @@ var patchSlotInsertAdjacentHTML = (HostElementPrototype) => {
     }
   };
 };
-var patchSlotInsertAdjacentText = (HostElementPrototype) => {
+const patchSlotInsertAdjacentText = (HostElementPrototype) => {
   HostElementPrototype.insertAdjacentText = function (position, text) {
     this.insertAdjacentHTML(position, text);
   };
 };
-var patchSlotInsertAdjacentElement = (HostElementPrototype) => {
+const patchSlotInsertAdjacentElement = (HostElementPrototype) => {
   const originalInsertAdjacentElement =
     HostElementPrototype.insertAdjacentElement;
   HostElementPrototype.insertAdjacentElement = function (position, element) {
@@ -2416,13 +2417,13 @@ var patchSlotInsertAdjacentElement = (HostElementPrototype) => {
     return element;
   };
 };
-var patchTextContent = (hostElementPrototype) => {
+const patchTextContent = (hostElementPrototype) => {
   const descriptor = Object.getOwnPropertyDescriptor(
     Node.prototype,
     "textContent",
   );
   Object.defineProperty(hostElementPrototype, "__textContent", descriptor);
-  if (BUILD18.experimentalScopedSlotChanges) {
+  if (BUILD.experimentalScopedSlotChanges) {
     Object.defineProperty(hostElementPrototype, "textContent", {
       get() {
         const slotRefNodes = getAllChildSlotNodes(this.childNodes);
@@ -2432,15 +2433,12 @@ var patchTextContent = (hostElementPrototype) => {
             const text = [];
             let slotContent = node.nextSibling;
             while (slotContent && slotContent["s-sn"] === node["s-sn"]) {
-              if (
-                slotContent.nodeType === NODE_TYPES.TEXT_NODE ||
-                slotContent.nodeType === NODE_TYPES.ELEMENT_NODE
-              ) {
+              if (slotContent.nodeType === 3 || slotContent.nodeType === 1) {
                 text.push(
                   (_b =
-                    (_a = slotContent.textContent) == null
+                    (_a = slotContent.textContent) === null || _a === void 0
                       ? void 0
-                      : _a.trim()) != null
+                      : _a.trim()) !== null && _b !== void 0
                     ? _b
                     : "",
                 );
@@ -2476,11 +2474,14 @@ var patchTextContent = (hostElementPrototype) => {
     Object.defineProperty(hostElementPrototype, "textContent", {
       get() {
         var _a;
-        const slotNode = getHostSlotNode(this.childNodes, "");
+        const slotNode = getHostSlotNode(this.childNodes, "", this.tagName);
         if (
-          ((_a = slotNode == null ? void 0 : slotNode.nextSibling) == null
+          ((_a =
+            slotNode === null || slotNode === void 0
+              ? void 0
+              : slotNode.nextSibling) === null || _a === void 0
             ? void 0
-            : _a.nodeType) === NODE_TYPES.TEXT_NODE
+            : _a.nodeType) === 3
         ) {
           return slotNode.nextSibling.textContent;
         } else if (slotNode) {
@@ -2491,11 +2492,14 @@ var patchTextContent = (hostElementPrototype) => {
       },
       set(value) {
         var _a;
-        const slotNode = getHostSlotNode(this.childNodes, "");
+        const slotNode = getHostSlotNode(this.childNodes, "", this.tagName);
         if (
-          ((_a = slotNode == null ? void 0 : slotNode.nextSibling) == null
+          ((_a =
+            slotNode === null || slotNode === void 0
+              ? void 0
+              : slotNode.nextSibling) === null || _a === void 0
             ? void 0
-            : _a.nodeType) === NODE_TYPES.TEXT_NODE
+            : _a.nodeType) === 3
         ) {
           slotNode.nextSibling.textContent = value;
         } else if (slotNode) {
@@ -2511,7 +2515,7 @@ var patchTextContent = (hostElementPrototype) => {
     });
   }
 };
-var patchChildSlotNodes = (elm, cmpMeta) => {
+const patchChildSlotNodes = (elm, cmpMeta) => {
   class FakeNodeList extends Array {
     item(n) {
       return this[n];
@@ -2534,8 +2538,8 @@ var patchChildSlotNodes = (elm, cmpMeta) => {
         const childNodes = childNodesFn.call(this);
         if ((plt.$flags$ & 1) === 0 && getHostRef(this).$flags$ & 2) {
           const result = new FakeNodeList();
-          for (let i2 = 0; i2 < childNodes.length; i2++) {
-            const slot = childNodes[i2]["s-nr"];
+          for (let i = 0; i < childNodes.length; i++) {
+            const slot = childNodes[i]["s-nr"];
             if (slot) {
               result.push(slot);
             }
@@ -2547,7 +2551,7 @@ var patchChildSlotNodes = (elm, cmpMeta) => {
     });
   }
 };
-var getAllChildSlotNodes = (childNodes) => {
+const getAllChildSlotNodes = (childNodes) => {
   const slotRefNodes = [];
   for (const childNode of Array.from(childNodes)) {
     if (childNode["s-sr"]) {
@@ -2557,65 +2561,69 @@ var getAllChildSlotNodes = (childNodes) => {
   }
   return slotRefNodes;
 };
-var getSlotName = (node) =>
+const getSlotName = (node) =>
   node["s-sn"] || (node.nodeType === 1 && node.getAttribute("slot")) || "";
-var getHostSlotNode = (childNodes, slotName) => {
-  let i2 = 0;
+const getHostSlotNode = (childNodes, slotName, hostName) => {
+  let i = 0;
   let childNode;
-  for (; i2 < childNodes.length; i2++) {
-    childNode = childNodes[i2];
-    if (childNode["s-sr"] && childNode["s-sn"] === slotName) {
+  for (; i < childNodes.length; i++) {
+    childNode = childNodes[i];
+    if (
+      childNode["s-sr"] &&
+      childNode["s-sn"] === slotName &&
+      childNode["s-hn"] === hostName
+    ) {
       return childNode;
     }
-    childNode = getHostSlotNode(childNode.childNodes, slotName);
+    childNode = getHostSlotNode(childNode.childNodes, slotName, hostName);
     if (childNode) {
       return childNode;
     }
   }
   return null;
 };
-var getHostSlotChildNodes = (n, slotName) => {
+const getHostSlotChildNodes = (n, slotName) => {
   const childNodes = [n];
   while ((n = n.nextSibling) && n["s-sn"] === slotName) {
     childNodes.push(n);
   }
   return childNodes;
 };
-var defineCustomElement = (Cstr, compactMeta) => {
+const defineCustomElement = (Cstr, compactMeta) => {
   customElements.define(compactMeta[1], proxyCustomElement(Cstr, compactMeta));
 };
-var proxyCustomElement = (Cstr, compactMeta) => {
+const proxyCustomElement = (Cstr, compactMeta) => {
   const cmpMeta = { $flags$: compactMeta[0], $tagName$: compactMeta[1] };
-  if (BUILD19.member) {
+  if (BUILD.member) {
     cmpMeta.$members$ = compactMeta[2];
   }
-  if (BUILD19.hostListener) {
+  if (BUILD.hostListener) {
     cmpMeta.$listeners$ = compactMeta[3];
   }
-  if (BUILD19.watchCallback) {
+  if (BUILD.watchCallback) {
     cmpMeta.$watchers$ = Cstr.$watchers$;
   }
-  if (BUILD19.reflect) {
+  if (BUILD.reflect) {
     cmpMeta.$attrsToReflect$ = [];
   }
-  if (BUILD19.shadowDom && !supportsShadow && cmpMeta.$flags$ & 1) {
+  if (BUILD.shadowDom && !supportsShadow && cmpMeta.$flags$ & 1) {
     cmpMeta.$flags$ |= 8;
   }
-  if (BUILD19.experimentalSlotFixes) {
-    if (BUILD19.scoped && cmpMeta.$flags$ & 2) {
+  if (BUILD.experimentalSlotFixes) {
+    if (BUILD.scoped && cmpMeta.$flags$ & 2) {
       patchPseudoShadowDom(Cstr.prototype, cmpMeta);
     }
   } else {
-    if (BUILD19.slotChildNodesFix) {
+    if (BUILD.slotChildNodesFix) {
       patchChildSlotNodes(Cstr.prototype, cmpMeta);
     }
-    if (BUILD19.cloneNodeFix) {
+    if (BUILD.cloneNodeFix) {
       patchCloneNode(Cstr.prototype);
     }
-    if (BUILD19.appendChildSlotFix) {
+    if (BUILD.appendChildSlotFix) {
       patchSlotAppendChild(Cstr.prototype);
     }
-    if (BUILD19.scopedSlotTextContentFix && cmpMeta.$flags$ & 2) {
+    if (BUILD.scopedSlotTextContentFix && cmpMeta.$flags$ & 2) {
       patchTextContent(Cstr.prototype);
     }
   }
@@ -2627,19 +2635,19 @@ var proxyCustomElement = (Cstr, compactMeta) => {
     },
     connectedCallback() {
       connectedCallback(this);
-      if (BUILD19.connectedCallback && originalConnectedCallback) {
+      if (BUILD.connectedCallback && originalConnectedCallback) {
         originalConnectedCallback.call(this);
       }
     },
     disconnectedCallback() {
       disconnectedCallback(this);
-      if (BUILD19.disconnectedCallback && originalDisconnectedCallback) {
+      if (BUILD.disconnectedCallback && originalDisconnectedCallback) {
         originalDisconnectedCallback.call(this);
       }
     },
     __attachShadow() {
       if (supportsShadow) {
-        if (BUILD19.shadowDelegatesFocus) {
+        if (BUILD.shadowDelegatesFocus) {
           this.attachShadow({
             mode: "open",
             delegatesFocus: !!(cmpMeta.$flags$ & 16),
@@ -2655,19 +2663,19 @@ var proxyCustomElement = (Cstr, compactMeta) => {
   Cstr.is = cmpMeta.$tagName$;
   return proxyComponent(Cstr, cmpMeta, 1 | 2);
 };
-var forceModeUpdate = (elm) => {
-  if (BUILD19.style && BUILD19.mode && !BUILD19.lazyLoad) {
+const forceModeUpdate = (elm) => {
+  if (BUILD.style && BUILD.mode && !BUILD.lazyLoad) {
     const mode = computeMode(elm);
     const hostRef = getHostRef(elm);
     if (hostRef.$modeName$ !== mode) {
       const cmpMeta = hostRef.$cmpMeta$;
       const oldScopeId = elm["s-sc"];
-      const scopeId2 = getScopeId(cmpMeta, mode);
+      const scopeId = getScopeId(cmpMeta, mode);
       const style = elm.constructor.style[mode];
       const flags = cmpMeta.$flags$;
       if (style) {
-        if (!styles.has(scopeId2)) {
-          registerStyle(scopeId2, style, !!(flags & 1));
+        if (!styles.has(scopeId)) {
+          registerStyle(scopeId, style, !!(flags & 1));
         }
         hostRef.$modeName$ = mode;
         elm.classList.remove(oldScopeId + "-h", oldScopeId + "-s");
@@ -2677,45 +2685,44 @@ var forceModeUpdate = (elm) => {
     }
   }
 };
-import { BUILD as BUILD20 } from "@stencil/core/internal/app-data";
-var hmrStart = (hostElement, cmpMeta, hmrVersionId) => {
+const hmrStart = (hostElement, cmpMeta, hmrVersionId) => {
   const hostRef = getHostRef(hostElement);
   hostRef.$flags$ = 1;
   initializeComponent(hostElement, hostRef, cmpMeta, hmrVersionId);
 };
-var bootstrapLazy = (lazyBundles, options = {}) => {
+const bootstrapLazy = (lazyBundles, options = {}) => {
   var _a;
-  if (BUILD20.profile && performance.mark) {
+  if (BUILD.profile && performance.mark) {
     performance.mark("st:app:start");
   }
   installDevTools();
   const endBootstrap = createTime("bootstrapLazy");
   const cmpTags = [];
   const exclude = options.exclude || [];
-  const customElements2 = win.customElements;
+  const customElements = win.customElements;
   const head = doc.head;
   const metaCharset = head.querySelector("meta[charset]");
   const dataStyles = doc.createElement("style");
   const deferredConnectedCallbacks = [];
-  const styles2 = doc.querySelectorAll(`[${HYDRATED_STYLE_ID}]`);
+  const styles = doc.querySelectorAll(`[${HYDRATED_STYLE_ID}]`);
   let appLoadFallback;
   let isBootstrapping = true;
-  let i2 = 0;
+  let i = 0;
   Object.assign(plt, options);
   plt.$resourcesUrl$ = new URL(options.resourcesUrl || "./", doc.baseURI).href;
-  if (BUILD20.asyncQueue) {
+  if (BUILD.asyncQueue) {
     if (options.syncQueue) {
       plt.$flags$ |= 4;
     }
   }
-  if (BUILD20.hydrateClientSide) {
+  if (BUILD.hydrateClientSide) {
     plt.$flags$ |= 2;
   }
-  if (BUILD20.hydrateClientSide && BUILD20.shadowDom) {
-    for (; i2 < styles2.length; i2++) {
+  if (BUILD.hydrateClientSide && BUILD.shadowDom) {
+    for (; i < styles.length; i++) {
       registerStyle(
-        styles2[i2].getAttribute(HYDRATED_STYLE_ID),
-        convertScopedToShadow(styles2[i2].innerHTML),
+        styles[i].getAttribute(HYDRATED_STYLE_ID),
+        convertScopedToShadow(styles[i].innerHTML),
         true,
       );
     }
@@ -2723,7 +2730,7 @@ var bootstrapLazy = (lazyBundles, options = {}) => {
   let hasSlotRelocation = false;
   lazyBundles.map((lazyBundle) => {
     lazyBundle[1].map((compactMeta) => {
-      var _a2;
+      var _a;
       const cmpMeta = {
         $flags$: compactMeta[0],
         $tagName$: compactMeta[1],
@@ -2733,23 +2740,24 @@ var bootstrapLazy = (lazyBundles, options = {}) => {
       if (cmpMeta.$flags$ & 4) {
         hasSlotRelocation = true;
       }
-      if (BUILD20.member) {
+      if (BUILD.member) {
         cmpMeta.$members$ = compactMeta[2];
       }
-      if (BUILD20.hostListener) {
+      if (BUILD.hostListener) {
         cmpMeta.$listeners$ = compactMeta[3];
       }
-      if (BUILD20.reflect) {
+      if (BUILD.reflect) {
         cmpMeta.$attrsToReflect$ = [];
       }
-      if (BUILD20.watchCallback) {
-        cmpMeta.$watchers$ = (_a2 = compactMeta[4]) != null ? _a2 : {};
+      if (BUILD.watchCallback) {
+        cmpMeta.$watchers$ =
+          (_a = compactMeta[4]) !== null && _a !== void 0 ? _a : {};
       }
-      if (BUILD20.shadowDom && !supportsShadow && cmpMeta.$flags$ & 1) {
+      if (BUILD.shadowDom && !supportsShadow && cmpMeta.$flags$ & 1) {
         cmpMeta.$flags$ |= 8;
       }
       const tagName =
-        BUILD20.transformTagName && options.transformTagName
+        BUILD.transformTagName && options.transformTagName
           ? options.transformTagName(cmpMeta.$tagName$)
           : cmpMeta.$tagName$;
       const HostElement = class extends HTMLElement {
@@ -2757,9 +2765,9 @@ var bootstrapLazy = (lazyBundles, options = {}) => {
           super(self);
           self = this;
           registerHost(self, cmpMeta);
-          if (BUILD20.shadowDom && cmpMeta.$flags$ & 1) {
+          if (BUILD.shadowDom && cmpMeta.$flags$ & 1) {
             if (supportsShadow) {
-              if (BUILD20.shadowDelegatesFocus) {
+              if (BUILD.shadowDelegatesFocus) {
                 self.attachShadow({
                   mode: "open",
                   delegatesFocus: !!(cmpMeta.$flags$ & 16),
@@ -2767,7 +2775,7 @@ var bootstrapLazy = (lazyBundles, options = {}) => {
               } else {
                 self.attachShadow({ mode: "open" });
               }
-            } else if (!BUILD20.hydrateServerSide && !("shadowRoot" in self)) {
+            } else if (!BUILD.hydrateServerSide && !("shadowRoot" in self)) {
               self.shadowRoot = self;
             }
           }
@@ -2790,56 +2798,55 @@ var bootstrapLazy = (lazyBundles, options = {}) => {
           return getHostRef(this).$onReadyPromise$;
         }
       };
-      if (BUILD20.experimentalSlotFixes) {
-        if (BUILD20.scoped && cmpMeta.$flags$ & 2) {
+      if (BUILD.experimentalSlotFixes) {
+        if (BUILD.scoped && cmpMeta.$flags$ & 2) {
           patchPseudoShadowDom(HostElement.prototype, cmpMeta);
         }
       } else {
-        if (BUILD20.slotChildNodesFix) {
+        if (BUILD.slotChildNodesFix) {
           patchChildSlotNodes(HostElement.prototype, cmpMeta);
         }
-        if (BUILD20.cloneNodeFix) {
+        if (BUILD.cloneNodeFix) {
           patchCloneNode(HostElement.prototype);
         }
-        if (BUILD20.appendChildSlotFix) {
+        if (BUILD.appendChildSlotFix) {
           patchSlotAppendChild(HostElement.prototype);
         }
-        if (BUILD20.scopedSlotTextContentFix && cmpMeta.$flags$ & 2) {
+        if (BUILD.scopedSlotTextContentFix && cmpMeta.$flags$ & 2) {
           patchTextContent(HostElement.prototype);
         }
       }
-      if (BUILD20.formAssociated && cmpMeta.$flags$ & 64) {
+      if (BUILD.formAssociated && cmpMeta.$flags$ & 64) {
         HostElement.formAssociated = true;
       }
-      if (BUILD20.hotModuleReplacement) {
+      if (BUILD.hotModuleReplacement) {
         HostElement.prototype["s-hmr"] = function (hmrVersionId) {
           hmrStart(this, cmpMeta, hmrVersionId);
         };
       }
       cmpMeta.$lazyBundleId$ = lazyBundle[0];
-      if (!exclude.includes(tagName) && !customElements2.get(tagName)) {
+      if (!exclude.includes(tagName) && !customElements.get(tagName)) {
         cmpTags.push(tagName);
-        customElements2.define(
-          tagName,
-          proxyComponent(HostElement, cmpMeta, 1),
-        );
+        customElements.define(tagName, proxyComponent(HostElement, cmpMeta, 1));
       }
     });
   });
   if (cmpTags.length > 0) {
     if (hasSlotRelocation) {
-      dataStyles.innerHTML += SLOT_FB_CSS;
+      dataStyles.textContent += SLOT_FB_CSS;
     }
     if (
-      BUILD20.invisiblePrehydration &&
-      (BUILD20.hydratedClass || BUILD20.hydratedAttribute)
+      BUILD.invisiblePrehydration &&
+      (BUILD.hydratedClass || BUILD.hydratedAttribute)
     ) {
-      dataStyles.innerHTML += cmpTags + HYDRATED_CSS;
+      dataStyles.textContent += cmpTags + HYDRATED_CSS;
     }
     if (dataStyles.innerHTML.length) {
       dataStyles.setAttribute("data-styles", "");
       const nonce =
-        (_a = plt.$nonce$) != null ? _a : queryNonceMetaTagContent(doc);
+        (_a = plt.$nonce$) !== null && _a !== void 0
+          ? _a
+          : queryNonceMetaTagContent(doc);
       if (nonce != null) {
         dataStyles.setAttribute("nonce", nonce);
       }
@@ -2853,7 +2860,7 @@ var bootstrapLazy = (lazyBundles, options = {}) => {
   if (deferredConnectedCallbacks.length) {
     deferredConnectedCallbacks.map((host) => host.connectedCallback());
   } else {
-    if (BUILD20.profile) {
+    if (BUILD.profile) {
       plt.jmp(() => (appLoadFallback = setTimeout(appDidLoad, 30, "timeout")));
     } else {
       plt.jmp(() => (appLoadFallback = setTimeout(appDidLoad, 30)));
@@ -2861,16 +2868,15 @@ var bootstrapLazy = (lazyBundles, options = {}) => {
   }
   endBootstrap();
 };
-var Fragment = (_, children) => children;
-import { BUILD as BUILD21 } from "@stencil/core/internal/app-data";
-var addHostEventListeners = (
+const Fragment = (_, children) => children;
+const addHostEventListeners = (
   elm,
   hostRef,
   listeners,
   attachParentListeners,
 ) => {
-  if (BUILD21.hostListener && listeners) {
-    if (BUILD21.hostListenerTargetParent) {
+  if (BUILD.hostListener && listeners) {
+    if (BUILD.hostListenerTargetParent) {
       if (attachParentListeners) {
         listeners = listeners.filter(([flags]) => flags & 32);
       } else {
@@ -2878,7 +2884,7 @@ var addHostEventListeners = (
       }
     }
     listeners.map(([flags, name, method]) => {
-      const target = BUILD21.hostListenerTarget
+      const target = BUILD.hostListenerTarget
         ? getHostListenerTarget(elm, flags)
         : elm;
       const handler = hostListenerProxy(hostRef, method);
@@ -2890,9 +2896,9 @@ var addHostEventListeners = (
     });
   }
 };
-var hostListenerProxy = (hostRef, methodName) => (ev) => {
+const hostListenerProxy = (hostRef, methodName) => (ev) => {
   try {
-    if (BUILD21.lazyLoad) {
+    if (BUILD.lazyLoad) {
       if (hostRef.$flags$ & 256) {
         hostRef.$lazyInstance$[methodName](ev);
       } else {
@@ -2908,28 +2914,28 @@ var hostListenerProxy = (hostRef, methodName) => (ev) => {
     consoleError(e);
   }
 };
-var getHostListenerTarget = (elm, flags) => {
-  if (BUILD21.hostListenerTargetDocument && flags & 4) return doc;
-  if (BUILD21.hostListenerTargetWindow && flags & 8) return win;
-  if (BUILD21.hostListenerTargetBody && flags & 16) return doc.body;
-  if (BUILD21.hostListenerTargetParent && flags & 32) return elm.parentElement;
+const getHostListenerTarget = (elm, flags) => {
+  if (BUILD.hostListenerTargetDocument && flags & 4) return doc;
+  if (BUILD.hostListenerTargetWindow && flags & 8) return win;
+  if (BUILD.hostListenerTargetBody && flags & 16) return doc.body;
+  if (BUILD.hostListenerTargetParent && flags & 32) return elm.parentElement;
   return elm;
 };
-var hostListenerOpts = (flags) =>
+const hostListenerOpts = (flags) =>
   supportsListenerOptions
     ? { passive: (flags & 1) !== 0, capture: (flags & 2) !== 0 }
     : (flags & 2) !== 0;
-var setNonce = (nonce) => (plt.$nonce$ = nonce);
-var setPlatformOptions = (opts) => Object.assign(plt, opts);
-var insertVdomAnnotations = (doc2, staticComponents) => {
-  if (doc2 != null) {
+const setNonce = (nonce) => (plt.$nonce$ = nonce);
+const setPlatformOptions = (opts) => Object.assign(plt, opts);
+const insertVdomAnnotations = (doc, staticComponents) => {
+  if (doc != null) {
     const docData = {
       hostIds: 0,
       rootLevelIds: 0,
       staticComponents: new Set(staticComponents),
     };
     const orgLocationNodes = [];
-    parseVNodeAnnotations(doc2, doc2.body, docData, orgLocationNodes);
+    parseVNodeAnnotations(doc, doc.body, docData, orgLocationNodes);
     orgLocationNodes.forEach((orgLocationNode) => {
       var _a, _b;
       if (orgLocationNode != null && orgLocationNode["s-nr"]) {
@@ -2947,15 +2953,17 @@ var insertVdomAnnotations = (doc2, staticComponents) => {
           } else if (nodeRef.nodeType === 3) {
             if (hostId === 0) {
               const textContent =
-                (_a = nodeRef.nodeValue) == null ? void 0 : _a.trim();
+                (_a = nodeRef.nodeValue) === null || _a === void 0
+                  ? void 0
+                  : _a.trim();
               if (textContent === "") {
                 orgLocationNode.remove();
                 return;
               }
             }
-            const commentBeforeTextNode = doc2.createComment(childId);
+            const commentBeforeTextNode = doc.createComment(childId);
             commentBeforeTextNode.nodeValue = `${TEXT_NODE_ID}.${childId}`;
-            (_b = nodeRef.parentNode) == null
+            (_b = nodeRef.parentNode) === null || _b === void 0
               ? void 0
               : _b.insertBefore(commentBeforeTextNode, nodeRef);
           }
@@ -2974,7 +2982,7 @@ var insertVdomAnnotations = (doc2, staticComponents) => {
     });
   }
 };
-var parseVNodeAnnotations = (doc2, node, docData, orgLocationNodes) => {
+const parseVNodeAnnotations = (doc, node, docData, orgLocationNodes) => {
   if (node == null) {
     return;
   }
@@ -2990,18 +2998,18 @@ var parseVNodeAnnotations = (doc2, node, docData, orgLocationNodes) => {
       ) {
         const cmpData = { nodeIds: 0 };
         insertVNodeAnnotations(
-          doc2,
+          doc,
           childNode,
           hostRef.$vnode$,
           docData,
           cmpData,
         );
       }
-      parseVNodeAnnotations(doc2, childNode, docData, orgLocationNodes);
+      parseVNodeAnnotations(doc, childNode, docData, orgLocationNodes);
     });
   }
 };
-var insertVNodeAnnotations = (doc2, hostElm, vnode, docData, cmpData) => {
+const insertVNodeAnnotations = (doc, hostElm, vnode, docData, cmpData) => {
   if (vnode != null) {
     const hostId = ++docData.hostIds;
     hostElm.setAttribute(HYDRATE_ID, hostId);
@@ -3012,7 +3020,7 @@ var insertVNodeAnnotations = (doc2, hostElm, vnode, docData, cmpData) => {
       const depth = 0;
       vnode.$children$.forEach((vnodeChild, index) => {
         insertChildVNodeAnnotations(
-          doc2,
+          doc,
           vnodeChild,
           cmpData,
           hostId,
@@ -3044,8 +3052,8 @@ var insertVNodeAnnotations = (doc2, hostElm, vnode, docData, cmpData) => {
     }
   }
 };
-var insertChildVNodeAnnotations = (
-  doc2,
+const insertChildVNodeAnnotations = (
+  doc,
   vnodeChild,
   cmpData,
   hostId,
@@ -3064,11 +3072,14 @@ var insertChildVNodeAnnotations = (
     childElm.setAttribute(HYDRATE_CHILD_ID, childId);
   } else if (childElm.nodeType === 3) {
     const parentNode = childElm.parentNode;
-    const nodeName = parentNode == null ? void 0 : parentNode.nodeName;
+    const nodeName =
+      parentNode === null || parentNode === void 0
+        ? void 0
+        : parentNode.nodeName;
     if (nodeName !== "STYLE" && nodeName !== "SCRIPT") {
       const textNodeId = `${TEXT_NODE_ID}.${childId}`;
-      const commentBeforeTextNode = doc2.createComment(textNodeId);
-      parentNode == null
+      const commentBeforeTextNode = doc.createComment(textNodeId);
+      parentNode === null || parentNode === void 0
         ? void 0
         : parentNode.insertBefore(commentBeforeTextNode, childElm);
     }
@@ -3081,40 +3092,42 @@ var insertChildVNodeAnnotations = (
   }
   if (vnodeChild.$children$ != null) {
     const childDepth = depth + 1;
-    vnodeChild.$children$.forEach((vnode, index2) => {
+    vnodeChild.$children$.forEach((vnode, index) => {
       insertChildVNodeAnnotations(
-        doc2,
+        doc,
         vnode,
         cmpData,
         hostId,
         childDepth,
-        index2,
+        index,
       );
     });
   }
 };
-var hostRefs = BUILD22.hotModuleReplacement
-  ? window.__STENCIL_HOSTREFS__ || (window.__STENCIL_HOSTREFS__ = new WeakMap())
+var _a;
+const hostRefs = BUILD.hotModuleReplacement
+  ? (_a = window).__STENCIL_HOSTREFS__ ||
+    (_a.__STENCIL_HOSTREFS__ = new WeakMap())
   : new WeakMap();
-var getHostRef = (ref) => hostRefs.get(ref);
-var registerInstance = (lazyInstance, hostRef) =>
+const getHostRef = (ref) => hostRefs.get(ref);
+const registerInstance = (lazyInstance, hostRef) =>
   hostRefs.set((hostRef.$lazyInstance$ = lazyInstance), hostRef);
-var registerHost = (hostElement, cmpMeta) => {
+const registerHost = (hostElement, cmpMeta) => {
   const hostRef = {
     $flags$: 0,
     $hostElement$: hostElement,
     $cmpMeta$: cmpMeta,
     $instanceValues$: new Map(),
   };
-  if (BUILD22.isDev) {
+  if (BUILD.isDev) {
     hostRef.$renderCount$ = 0;
   }
-  if (BUILD22.method && BUILD22.lazyLoad) {
+  if (BUILD.method && BUILD.lazyLoad) {
     hostRef.$onInstancePromise$ = new Promise(
       (r) => (hostRef.$onInstanceResolve$ = r),
     );
   }
-  if (BUILD22.asyncLoading) {
+  if (BUILD.asyncLoading) {
     hostRef.$onReadyPromise$ = new Promise(
       (r) => (hostRef.$onReadyResolve$ = r),
     );
@@ -3124,89 +3137,81 @@ var registerHost = (hostElement, cmpMeta) => {
   addHostEventListeners(hostElement, hostRef, cmpMeta.$listeners$, false);
   return hostRefs.set(hostElement, hostRef);
 };
-var isMemberInElement = (elm, memberName) => memberName in elm;
-import { BUILD as BUILD24 } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD23 } from "@stencil/core/internal/app-data";
-var customError;
-var consoleError = (e, el) => (customError || console.error)(e, el);
-var STENCIL_DEV_MODE = BUILD23.isTesting
+const isMemberInElement = (elm, memberName) => memberName in elm;
+const consoleError = (e, el) => (customError || console.error)(e, el);
+const STENCIL_DEV_MODE = BUILD.isTesting
   ? ["STENCIL:"]
   : [
       "%cstencil",
       "color: white;background:#4c47ff;font-weight: bold; font-size:10px; padding:2px 6px; border-radius: 5px",
     ];
-var consoleDevError = (...m) => console.error(...STENCIL_DEV_MODE, ...m);
-var consoleDevWarn = (...m) => console.warn(...STENCIL_DEV_MODE, ...m);
-var consoleDevInfo = (...m) => console.info(...STENCIL_DEV_MODE, ...m);
-var setErrorHandler = (handler) => (customError = handler);
-var globImport_entry_js = __glob({});
-var cmpModules = new Map();
-var loadModule = (cmpMeta, hostRef, hmrVersionId) => {
+const consoleDevError = (...m) => console.error(...STENCIL_DEV_MODE, ...m);
+const consoleDevWarn = (...m) => console.warn(...STENCIL_DEV_MODE, ...m);
+const consoleDevInfo = (...m) => console.info(...STENCIL_DEV_MODE, ...m);
+const setErrorHandler = (handler) => (customError = handler);
+const cmpModules = new Map();
+const loadModule = (cmpMeta, hostRef, hmrVersionId) => {
   const exportName = cmpMeta.$tagName$.replace(/-/g, "_");
   const bundleId = cmpMeta.$lazyBundleId$;
-  if (BUILD24.isDev && typeof bundleId !== "string") {
+  if (BUILD.isDev && typeof bundleId !== "string") {
     consoleDevError(
       `Trying to lazily load component <${cmpMeta.$tagName$}> with style mode "${hostRef.$modeName$}", but it does not exist.`,
     );
-    return void 0;
+    return undefined;
   }
-  const module = !BUILD24.hotModuleReplacement
-    ? cmpModules.get(bundleId)
-    : false;
+  const module = !BUILD.hotModuleReplacement ? cmpModules.get(bundleId) : false;
   if (module) {
     return module[exportName];
   }
-  return globImport_entry_js(
-    `./${bundleId}.entry.js${BUILD24.hotModuleReplacement && hmrVersionId ? "?s-hmr=" + hmrVersionId : ""}`,
+  return import(
+    `./${bundleId}.entry.js${BUILD.hotModuleReplacement && hmrVersionId ? "?s-hmr=" + hmrVersionId : ""}`
   ).then((importedModule) => {
-    if (!BUILD24.hotModuleReplacement) {
+    if (!BUILD.hotModuleReplacement) {
       cmpModules.set(bundleId, importedModule);
     }
     return importedModule[exportName];
   }, consoleError);
 };
-var styles = new Map();
-var modeResolutionChain = [];
-import { BUILD as BUILD26 } from "@stencil/core/internal/app-data";
-import { BUILD as BUILD25 } from "@stencil/core/internal/app-data";
-var win = typeof window !== "undefined" ? window : {};
-var doc = win.document || { head: {} };
-var H = win.HTMLElement || class {};
-var plt = {
+const styles = new Map();
+const modeResolutionChain = [];
+const win = typeof window !== "undefined" ? window : {};
+const doc = win.document || { head: {} };
+const H = win.HTMLElement || class {};
+const plt = {
   $flags$: 0,
   $resourcesUrl$: "",
-  jmp: (h2) => h2(),
-  raf: (h2) => requestAnimationFrame(h2),
+  jmp: (h) => h(),
+  raf: (h) => requestAnimationFrame(h),
   ael: (el, eventName, listener, opts) =>
     el.addEventListener(eventName, listener, opts),
   rel: (el, eventName, listener, opts) =>
     el.removeEventListener(eventName, listener, opts),
   ce: (eventName, opts) => new CustomEvent(eventName, opts),
 };
-var setPlatformHelpers = (helpers) => {
+const setPlatformHelpers = (helpers) => {
   Object.assign(plt, helpers);
 };
-var supportsShadow =
-  BUILD25.shadowDomShim && BUILD25.shadowDom
+const supportsShadow =
+  BUILD.shadowDomShim && BUILD.shadowDom
     ? (() => (doc.head.attachShadow + "").indexOf("[native") > -1)()
     : true;
-var supportsListenerOptions = (() => {
-  let supportsListenerOptions2 = false;
+const supportsListenerOptions = (() => {
+  let supportsListenerOptions = false;
   try {
     doc.addEventListener(
       "e",
       null,
       Object.defineProperty({}, "passive", {
         get() {
-          supportsListenerOptions2 = true;
+          supportsListenerOptions = true;
         },
       }),
     );
   } catch (e) {}
-  return supportsListenerOptions2;
+  return supportsListenerOptions;
 })();
-var promiseResolve = (v) => Promise.resolve(v);
-var supportsConstructableStylesheets = BUILD25.constructableCSS
+const promiseResolve = (v) => Promise.resolve(v);
+const supportsConstructableStylesheets = BUILD.constructableCSS
   ? (() => {
       try {
         new CSSStyleSheet();
@@ -3215,12 +3220,10 @@ var supportsConstructableStylesheets = BUILD25.constructableCSS
       return false;
     })()
   : false;
-var queueCongestion = 0;
-var queuePending = false;
-var queueDomReads = [];
-var queueDomWrites = [];
-var queueDomWritesLow = [];
-var queueTask = (queue, write) => (cb) => {
+const queueDomReads = [];
+const queueDomWrites = [];
+const queueDomWritesLow = [];
+const queueTask = (queue, write) => (cb) => {
   queue.push(cb);
   if (!queuePending) {
     queuePending = true;
@@ -3231,38 +3234,38 @@ var queueTask = (queue, write) => (cb) => {
     }
   }
 };
-var consume = (queue) => {
-  for (let i2 = 0; i2 < queue.length; i2++) {
+const consume = (queue) => {
+  for (let i = 0; i < queue.length; i++) {
     try {
-      queue[i2](performance.now());
+      queue[i](performance.now());
     } catch (e) {
       consoleError(e);
     }
   }
   queue.length = 0;
 };
-var consumeTimeout = (queue, timeout) => {
-  let i2 = 0;
+const consumeTimeout = (queue, timeout) => {
+  let i = 0;
   let ts = 0;
-  while (i2 < queue.length && (ts = performance.now()) < timeout) {
+  while (i < queue.length && (ts = performance.now()) < timeout) {
     try {
-      queue[i2++](ts);
+      queue[i++](ts);
     } catch (e) {
       consoleError(e);
     }
   }
-  if (i2 === queue.length) {
+  if (i === queue.length) {
     queue.length = 0;
-  } else if (i2 !== 0) {
-    queue.splice(0, i2);
+  } else if (i !== 0) {
+    queue.splice(0, i);
   }
 };
-var flush = () => {
-  if (BUILD26.asyncQueue) {
+const flush = () => {
+  if (BUILD.asyncQueue) {
     queueCongestion++;
   }
   consume(queueDomReads);
-  if (BUILD26.asyncQueue) {
+  if (BUILD.asyncQueue) {
     const timeout =
       (plt.$flags$ & 6) === 2
         ? performance.now() + 14 * Math.ceil(queueCongestion * (1 / 10))
@@ -3291,23 +3294,16 @@ var flush = () => {
     }
   }
 };
-var nextTick = (cb) => promiseResolve().then(cb);
-var readTask = queueTask(queueDomReads, false);
-var writeTask = queueTask(queueDomWrites, true);
-import {
-  BUILD as BUILD27,
-  Env,
-  NAMESPACE as NAMESPACE2,
-} from "@stencil/core/internal/app-data";
+const nextTick = (cb) => promiseResolve().then(cb);
+const readTask = queueTask(queueDomReads, false);
+const writeTask = queueTask(queueDomWrites, true);
+export { BUILD, Env, NAMESPACE } from "@stencil/core/internal/app-data";
 export {
-  BUILD27 as BUILD,
   Build,
-  Env,
   Fragment,
   H,
   H as HTMLElement,
   Host,
-  NAMESPACE2 as NAMESPACE,
   STENCIL_DEV_MODE,
   addHostEventListeners,
   bootstrapLazy,

@@ -1,6 +1,6 @@
 {
   "name": "@stencil/core/internal/testing",
-  "version": "4.12.1-dev.1707254899.7bb9ba7",
+  "version": "4.14.0-dev.1712179966.c1a9f20",
   "description": "Stencil internal testing platform to be imported by the Stencil Compiler. Breaking changes can and will happen at any time.",
   "main": "./index.js",
   "private": true

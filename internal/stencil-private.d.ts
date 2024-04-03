@@ -1222,6 +1222,11 @@ export interface RenderNode extends HostElement {
    */
   host?: Element;
   /**
+   * On Ref Function:
+   * Callback function to be called when the slotted node ref is ready.
+   */
+  ["s-rf"]?: (elm: Element) => unknown;
+  /**
    * Is initially hidden
    * Whether this node was originally rendered with the `hidden` attribute.
    *
@@ -1972,6 +1977,7 @@ export interface E2EProcessEnv {
   __STENCIL_BROWSER_WAIT_UNTIL?: string;
   __STENCIL_SCREENSHOT__?: "true";
   __STENCIL_SCREENSHOT_BUILD__?: string;
+  __STENCIL_SCREENSHOT_TIMEOUT_MS__?: string;
   __STENCIL_E2E_TESTS__?: "true";
   __STENCIL_E2E_DEVTOOLS__?: "true";
   __STENCIL_SPEC_TESTS__?: "true";
